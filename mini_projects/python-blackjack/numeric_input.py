@@ -1,7 +1,8 @@
 class NumericInput:
     
     #Todo. betting과 cards(덱 선택) 두가지에 쓰이는데, betting엔 float가 쓰일 수 있으니 로직 수정 고려.
-    def get_numeric(self, prompt="input: "):
+    #Todo. 현재 함수는 str, float 등 여러가지 타입으로 리턴되고있음.
+    def get_numeric(self, prompt:str="input: ") -> str:
         while True:
             user_input = input(prompt)
             try:
@@ -9,7 +10,7 @@ class NumericInput:
                 if user_input == "":
                     # print("No input detected.")
                     return ""
-                numeric_value = int(user_input)
+                numeric_value = user_input
                 return numeric_value
             except ValueError:
                 print("Please type only number.")

@@ -15,8 +15,11 @@ class Betting(NumericInput):
 
     # 기록 불러오기
     def load_bank(self):
-        with open("./user.cfg",  mode="r") as last_bank_file:
-            self.last_bank = float(last_bank_file.read()) 
+        try:
+            with open("./user.cfg",  mode="r") as last_bank_file:
+                self.last_bank = float(last_bank_file.read())
+        except: 
+            self.last_bank = 1000         
         if self.last_bank > self.bank:
             if input(f"Load saved data? (bank=${self.last_bank}, type 'n' to Reset=$1000.) : ").lower() == "n":
                 pass
@@ -35,11 +38,18 @@ class Betting(NumericInput):
         user_input = self.get_numeric(f"Your Bet (Previous bet: ${self.last_bet} = Enter): $")
         if user_input == "":
             user_bet = self.last_bet
-
+        #! All-in
+        elif user_input == "all":
+            user_bet = self.bank
+        #! debug- 입력오류처리
         else:
-            user_bet = int(user_input)
+            try:
+                user_bet = int(user_input)
+            except:
+                print("[Warning] Invalid input. Betting default($10).")
+                user_bet = 10
 
-        # user_bet
+        # user_bet 입력 검증 후 current_bet으로 업데이트.
         if self.bank >= user_bet:
             self.current_bet = user_bet
             self.last_bet = self.current_bet
@@ -69,5 +79,3 @@ class Betting(NumericInput):
         if self.bank > self.highest:
             self.highest = self.bank
             
-    
-#~ todo. all-in 기능 첨부. - numeric_input 사용과 컨셉이 겹쳐서 계획 취소.

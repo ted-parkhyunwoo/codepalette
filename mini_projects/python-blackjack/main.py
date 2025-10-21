@@ -19,34 +19,29 @@ betting = Betting()
 #* test. 승패 저장소.
 total_result = []
 
-# 상황 출력 변수 저장 (desc메서드)
-desc = cards.desc
-
-
-
-# 진행 및 결과 프린트. - 모듈화를 진행하지 않는다. (클래스와 메서드가 여기저기서 사용중임.)
+# 상황 출력 생성: 진행 및 결과 변수저장 메서드
 def score_display(option):
-
-    status_table = {'Name': ['Dealer', "Player"],
-                   'Cards': [(f"*   {desc('dealer', 'cards')[1]}"), ('  '.join(desc('player', 'cards')))],
-                   'Score': [(f"[* , {desc('dealer', 'score')[1]}]"), desc('player', 'score')],                  
-                   'Current Score': [(f"at least {desc('dealer', 'score')[1]}"), sum(desc('player', 'score'))],
-                   }
-
-
-    result_table = {'Name': ['Dealer', "Player"],
-                   'Cards': [('  '.join(desc('dealer', 'cards'))), ('  '.join(desc('player', 'cards')))],
-                   'Score': [desc('dealer', 'score'), desc('player', 'score')],
-                   'Status' : [winner.status_dealer , winner.status_player],
-                   'Total': [sum(desc('dealer', 'score')), sum(desc('player', 'score'))]
-
-                   }
-    
     if option == "status":
+        status_table = {
+            'Name': ['Dealer', "Player"],
+            'Cards': [(f"*   {cards.getDeck('dealer','cards')[1]}"), ('  '.join(cards.getDeck('player','cards')))],
+            'Score': [(f"[* , {cards.getDeck('dealer','score')[1]}]"), cards.getDeck('player','score')],
+            'Current Score': [(f"at least {cards.getDeck('dealer','score')[1]}"), cards.getTotalScore('player','total')],
+            }
+        
         print(tabulate(status_table, headers='keys', tablefmt="pretty"))
+
     elif option == "result":
+        result_table = {
+            'Name': ['Dealer', "Player"],
+            'Cards': [('  '.join(cards.getDeck('dealer','cards'))), ('  '.join(cards.getDeck('player','cards')))],
+            'Score': [cards.getDeck('dealer','score'), cards.getDeck('player','score')],
+            'Status' : [winner.status_dealer , winner.status_player],
+            'Total': [cards.getTotalScore('dealer','total'), cards.getTotalScore('player','total')]
+            }
+        
         print(tabulate(result_table, headers='keys', tablefmt="pretty"))
-    print(f"remaining {desc('cards', 'remain')} cards. used {desc('cards', 'decks')} deck(s).")
+    print(f"remaining {cards.getCardInfo('cards','remain')} cards. used {cards.getCardInfo('cards','decks')} deck(s).")
 
 
 # 한 턴의 진행
@@ -54,7 +49,7 @@ def main():
     
     # 해당게임 결과출력 함수정의. 
     def show_result():
-        winner.result(sum(desc('dealer', 'score')), sum(desc('player', 'score')), len(desc('dealer', 'cards')), len(desc('player', 'cards')))
+        winner.result(cards.getTotalScore('dealer','total'), cards.getTotalScore('player','total'), len(cards.getDeck('dealer','cards')), len(cards.getDeck('player','cards')))
         score_display("result")
         
     # hit or stand 루프 탈출 변수 false 선언    
@@ -66,9 +61,9 @@ def main():
         cards.deal_card("dealer")
 
     # 초기 배분 bust발생시 ace->1점 처리.
-    if sum(desc('player', 'score')) > 21:
+    if cards.getTotalScore('player','total') > 21:
         cards.ace_changer("player")
-    if sum(desc('dealer', 'score')) > 21:
+    if cards.getTotalScore('dealer','total') > 21:
         cards.ace_changer("dealer")
 
     # 진행 상황 출력(딜러 *마스킹처리.)
@@ -78,7 +73,7 @@ def main():
     time.sleep(0.5)
 
     # 초기배분 플레이어 블랙잭 체크.(규칙상 플레이어 블랙잭에서만 hit or strand로 진행하지 않으므로.)  
-    if sum(desc('player', 'score')) == 21:
+    if cards.getTotalScore('player','total') == 21:
         clear()
         
         #결과 생성/출력
@@ -104,11 +99,11 @@ def main():
             cards.deal_card("player")
 
             # hit중 bust시 ace->1 우선 처리
-            if sum(desc('player', 'score')) > 21:
+            if cards.getTotalScore('player','total') > 21:
                 cards.ace_changer("player")
             
             # bust, 21달성시 결과생성/출력
-            if sum(desc('player', 'score')) > 21 or sum(desc('player', 'score')) == 21:        
+            if cards.getTotalScore('player','total') > 21 or cards.getTotalScore('player','total') == 21:        
                 
                 #결과 생성/출력
                 show_result()
