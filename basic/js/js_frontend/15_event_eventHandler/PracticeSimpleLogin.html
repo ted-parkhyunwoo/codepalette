@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1 id="h1_title">이름을 입력하세요</h1>
+    <input type="text" id="text1" value = "">
+    <button type="button" id="button1">login</button>
+
+<script>
+const change_h1_tag = function(msg) {
+    if (h1_tag.textContent == "hi") h1_tag.textContent = "안녕하세요.";
+    else h1_tag.textContent = msg;
+}
+
+let logged = false;
+let username = "";
+
+const buttonClicked = function(type) {
+    if (logged === false) {
+        if (text1.value == "") {
+            h1_tag.textContent = "이름을 입력하세요."
+            logged = false;
+            return;
+        }
+        username = text1.value;
+        logged = true;
+        if (logged) {
+            h1_tag.textContent = `${text1.value}님 반갑습니다`;
+            text1.value = ""
+            button1.textContent = "logout";
+        }
+    }
+
+    else if (logged === true) {
+        h1_tag.textContent = `${username}님. 3초 뒤 로그아웃 됩니다.`
+        setTimeout(()=> {
+            h1_tag.textContent = "안녕하세요"
+            text1.value = username;
+            logged = false;
+            username = "";
+            button1.textContent = "login"
+        }, 3000)
+    }
+}
+
+const h1_tag = document.querySelector("#h1_title");
+const button1 = document.querySelector("#button1");
+const text1 = document.querySelector("#text1");
+text1.value = ""
+
+h1_tag.onclick = () => change_h1_tag("hi");
+button1.onclick = () => buttonClicked("b1");
+</script>
+
+</body>
+</html>

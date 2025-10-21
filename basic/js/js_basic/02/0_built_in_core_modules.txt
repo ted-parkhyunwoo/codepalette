@@ -1,0 +1,27 @@
+node.js 의 내장모듈 : https://nodejs.org/docs/latest/api/
+예: https://nodejs.org/docs/latest/api/fs.html#promise-example
+이곳에서 cjs, esm 별로 예제를 살펴볼 수 있음. (commonJS, esModuleSystem: EcmascriptModuleSystem)
+
+
+core modules = fs:파일시스템, http:HTTP서버생성,요청처리 등, path:파일경로, streams:네트워크데이터스트림(stream의 오타인듯.), 
+                crypto:암호화및복호화, os:운영체제상호작용, util:다양한 유틸리티, events:이벤트기반프로그래밍지원_이벤트생성,등록,처리등
+
+
+COPILOT이 설명하는 core modules:
+- fs (File System) – 파일을 읽고 쓰는 기능 제공
+- path – 파일 및 디렉토리 경로 조작
+- http – HTTP 서버 및 클라이언트 기능
+- https – HTTPS 서버 및 클라이언트 기능
+- url – URL을 다루는 도구
+- crypto – 암호화 관련 기능
+- os – 운영체제 정보 제공
+- events – 이벤트 기반 프로그래밍 지원
+- buffer – 바이너리 데이터 처리
+- stream – 스트리밍 데이터 처리
+
+
+GLOBAL MODULES = require 없이 사용 가능.
+예) console 객체의 log()
+    __dirname : 현재 모듈이 있는 디렉토리 이름
+    __filename : 현재 모듈 파일의 이름
+    

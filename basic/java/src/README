@@ -1,0 +1,8 @@
+LifeJava Write up.
+
+조용준 님의 '생활 밀착형 객체지향 자바 프로그래밍' 강의 write-up.
+writeup : src/training/learning 에 기록된다.
+강의자료: com.example.javastudy 에 저장됐다.
+
+개인용 패키지는 학습중 궁금해서 작성해본 내용, summary 등이 작성됐다.
+위치는 training/module에 기록했으며, 구현시험은 training/testcodes에 기록했다.

@@ -1,0 +1,13 @@
+12강까지의 배운것을 토대로 작성된 OOP 기초.
+    클래스의 구조(package, import, class)
+    함수-메서드 오버로딩(여러 생성자)
+    상속과 오버라이드(extends, super, @Override)
+    접근제한자를 사용한 정보은닉과 getter setter를 사용한 캡슐화
+    싱글톤디자인(행위중심클래스-한 개의 인스턴스)
+
+
+classTest패키지는 예제파일 3개를 담고있으며
+패키지 내 클래스들의 외부사용은 ../UsingClass.java에서 보여주고있다.
+    Class1과 Class3은 기본,파생클래스(부모자식관계) 예제
+    Class2는 싱글톤디자인 예제이다.
+

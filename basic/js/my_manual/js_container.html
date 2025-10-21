@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JavaScript 기본 컨테이너 정리</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #121212;
+      color: #f5f5f5;
+    }
+    h1, h2, h5 {
+      color: white;
+    }
+    h1 {
+      border-bottom: 2px solid #444;
+      padding-bottom: 0.3em;
+    }
+    h2 {
+      margin-top: 2rem;
+    }
+    h5 {
+      margin-top: 1.5rem;
+    }
+    pre {
+      background-color: #1e1e1e;
+      padding: 1em;
+      border-radius: 0.5em;
+      overflow-x: auto;
+      position: relative;
+      margin-bottom: 1em;
+    }
+    pre::before {
+      content: "javascript";
+      color: white;
+      position: absolute;
+      top: 0;
+      right: 1em;
+      font-size: 0.75em;
+      background-color: #1e1e1e;
+      padding: 0.2em 0.5em;
+      border-radius: 0 0 0.5em 0.5em;
+    }
+    code {
+      font-family: monospace;
+      white-space: pre;
+      display: block;
+    }
+    table {
+      background-color: #2a2a2a;
+      color: #f5f5f5;
+    }
+    .table-bordered th,
+    .table-bordered td {
+      border: 1px solid #555;
+    }
+    .table-secondary {
+      background-color: #3a3a3a;
+    }
+  </style>
+</head>
+<body class="bg-dark">
+  <div class="container py-5">
+    <h1 class="mb-4">JavaScript 기본 컨테이너(컬렉션) 정리</h1>
+
+    <section class="mb-5">
+      <h2>✅ 1. Array (배열)</h2>
+      <h5>📌 선언</h5>
+      <pre><code class="language-javascript">let arr = [1, 2, 3];
+let empty = [];</code></pre>
+
+      <h5>➕ 요소 추가</h5>
+      <pre><code class="language-javascript">arr.push(4);        // 뒤에 추가
+arr.unshift(0);     // 앞에 추가
+arr.splice(2, 0, 99); // 인덱스 2 위치에 삽입</code></pre>
+
+      <h5>➖ 요소 삭제</h5>
+      <pre><code class="language-javascript">arr.pop();           // 뒤 삭제
+arr.shift();         // 앞 삭제
+arr.splice(2, 1);     // 인덱스 2 요소 삭제</code></pre>
+
+      <h5>🔀 정렬</h5>
+      <pre><code class="language-javascript">arr.sort((a, b) => a - b); // 오름차순
+arr.sort((a, b) => b - a); // 내림차순</code></pre>
+
+      <h5>🎯 요소 접근</h5>
+      <pre><code class="language-javascript">console.log(arr[1]);
+for (let i = 0; i < arr.length; i++) console.log(arr[i]);
+for (let val of arr) console.log(val);</code></pre>
+    </section>
+
+    <section class="mb-5">
+      <h2>✅ 2. Object (객체)</h2>
+      <h5>📌 선언</h5>
+      <pre><code class="language-javascript">let obj = { name: "Ted", age: 30 };</code></pre>
+
+      <h5>➕ 요소 추가/수정</h5>
+      <pre><code class="language-javascript">obj.city = "Seoul";
+obj["age"] = 31;</code></pre>
+
+      <h5>➖ 요소 삭제</h5>
+      <pre><code class="language-javascript">delete obj.age;</code></pre>
+
+      <h5>🔀 정렬</h5>
+      <pre><code class="language-javascript">// 객체 배열 정렬 예시
+let users = [
+  { name: "Ted", age: 30 },
+  { name: "Amy", age: 25 }
+];
+users.sort((a, b) => a.age - b.age);</code></pre>
+
+      <h5>🎯 요소 접근</h5>
+      <pre><code class="language-javascript">console.log(obj.name);
+console.log(obj["age"]);
+for (let key in obj) console.log(key, obj[key]);
+Object.keys(obj);
+Object.values(obj);
+Object.entries(obj);</code></pre>
+    </section>
+
+    <section class="mb-5">
+      <h2>✅ 3. Set</h2>
+      <h5>📌 선언</h5>
+      <pre><code class="language-javascript">let set = new Set([1, 2, 3]);</code></pre>
+
+      <h5>➕ 요소 추가</h5>
+      <pre><code class="language-javascript">set.add(4);</code></pre>
+
+      <h5>➖ 요소 삭제</h5>
+      <pre><code class="language-javascript">set.delete(2);
+set.clear();</code></pre>
+
+      <h5>🔀 정렬</h5>
+      <pre><code class="language-javascript">let sorted = [...set].sort((a, b) => a - b);</code></pre>
+
+      <h5>🎯 요소 접근</h5>
+      <pre><code class="language-javascript">for (let val of set) console.log(val);
+let arr = [...set];
+console.log(arr[0]);</code></pre>
+    </section>
+
+    <section class="mb-5">
+      <h2>✅ 4. Map</h2>
+      <h5>📌 선언</h5>
+      <pre><code class="language-javascript">let map = new Map();
+map.set("name", "Ted");</code></pre>
+
+      <h5>➕ 요소 추가/수정</h5>
+      <pre><code class="language-javascript">map.set("age", 30);
+map.set("age", 31);</code></pre>
+
+      <h5>➖ 요소 삭제</h5>
+      <pre><code class="language-javascript">map.delete("age");
+map.clear();</code></pre>
+
+      <h5>🔀 정렬</h5>
+      <pre><code class="language-javascript">let sortedEntries = [...map.entries()].sort((a, b) => a[1] - b[1]);</code></pre>
+
+      <h5>🎯 요소 접근</h5>
+      <pre><code class="language-javascript">map.get("name");
+for (let [key, val] of map) console.log(key, val);
+map.keys();
+map.values();
+map.entries();</code></pre>
+    </section>
+
+    <section class="mb-5">
+      <h2>📋 요약 테이블</h2>
+      <table class="table table-bordered table-hover">
+        <thead class="table-secondary">
+          <tr>
+            <th>컨테이너</th>
+            <th>선언 예시</th>
+            <th>추가</th>
+            <th>삭제</th>
+            <th>정렬</th>
+            <th>접근 방식</th>
+            <th>중복 허용 여부</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Array</td>
+            <td>[1,2,3]</td>
+            <td>push/unshift/splice</td>
+            <td>pop/shift/splice</td>
+            <td>sort()</td>
+            <td>인덱스 (arr[i])</td>
+            <td class="text-success">O</td>
+          </tr>
+          <tr>
+            <td>Object</td>
+            <td>{a:1}</td>
+            <td>obj.key = val</td>
+            <td>delete obj.key</td>
+            <td>불가 (객체 배열만 가능)</td>
+            <td>키 기반 (obj[key])</td>
+            <td class="text-danger">X (키 중복 불가)</td>
+          </tr>
+          <tr>
+            <td>Set</td>
+            <td>new Set()</td>
+            <td>add()</td>
+            <td>delete(), clear()</td>
+            <td>[...set].sort()</td>
+            <td>값 반복 (for...of)</td>
+            <td class="text-danger">X</td>
+          </tr>
+          <tr>
+            <td>Map</td>
+            <td>new Map()</td>
+            <td>set()</td>
+            <td>delete(), clear()</td>
+            <td>[...map].sort()</td>
+            <td>키 기반 (get/set)</td>
+            <td class="text-danger">X (키 중복 불가)</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>

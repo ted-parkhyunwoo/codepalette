@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <p class="hello greet good">안녕</p>
+<script>
+let p = document.querySelector('p');
+let pClass = p.classList;
+console.log(pClass);        //DOMTokenList(3) [ "hello", "greet", "good" ]
+
+// 클래스콜렉션(pClass객체) 의 내장 메서드들.
+pClass.add("dude");                             // class 추가
+pClass.remove("dude")                           // class 삭제
+console.log(pClass.contains("dude"))            // 존재여부 확인(bool)
+console.log(pClass.item(0));                    // 인덱스기반 접근
+console.log(pClass.replace(pClass.item(0), "HELLO"));  // 대체
+pClass.toggle("HELLO", false);             // bool 인자로 해당클래스 제거
+pClass.toggle("HELLO", true);              // 다시추가(인덱스 바뀜 주의)
+pClass.toggle("HELLO");                    // bool 인자를 안넣으면 껐다켰다 됨.
+pClass.toggle("HELLO");
+console.log(pClass);    
+</script>
+</body>
+</html>
