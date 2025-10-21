@@ -32,23 +32,17 @@ class Betting(NumericInput):
         with open("./user.cfg", mode="w") as save_file:
             save_file.write(str(self.savebank))
         
-    # 베팅할 금액의 크기.
+    # 베팅할 금액의 크기검사.
     def bet_amount(self):
         #입력 검사.
         user_input = self.get_numeric(f"Your Bet (Previous bet: ${self.last_bet} = Enter): $")
-        if user_input == "":
-            user_bet = self.last_bet
-        #! All-in
-        elif user_input == "all":
-            user_bet = self.bank
-        #! debug- 입력오류처리
-        else:
-            try:
-                user_bet = int(user_input)
-            except:
-                print("[Warning] Invalid input. Betting default($10).")
-                user_bet = 10
-
+        if user_input == "":        user_bet = self.last_bet
+        else:                       user_bet = int(user_input)
+        #! 마이너스배팅->일부러 지기 어뷰징 금지 디버깅
+        if user_bet < 10:
+            print("Minimum betting: $10")
+            return False
+        
         # user_bet 입력 검증 후 current_bet으로 업데이트.
         if self.bank >= user_bet:
             self.current_bet = user_bet

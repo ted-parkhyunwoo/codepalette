@@ -16,15 +16,14 @@ class Cards(NumericInput):
 
         # 플레이어가 사용할 덱의 갯수. 입력이 비어있다면 1.
         self.decks_used:int = 0
-        tmp:str = self.get_numeric("How much used card decks? (default: Single = Enter) : ")
-        if tmp == "":
+        user_input:str = self.get_numeric("How much used card decks? (default: Single = Enter) : ")
+        if user_input == "":
             self.decks_used = 1
-        # 예외처리. 
         else:
-            try:
-                self.decks_used = int(tmp)
-            except:
-                print("[Warning] Invalid input. Using default(1) card deck")
+            self.decks_used = int(user_input)
+            # 덱 0~음수입력 예외처리. 
+            if self.decks_used <= 0:
+                print("Using 1 deck.")
                 self.decks_used = 1
         self.make_new_deck()
 

@@ -11,6 +11,8 @@ class NumericInput:
                     # print("No input detected.")
                     return ""
                 numeric_value = user_input
+                intTest = int(numeric_value)
+                floatTest = float(numeric_value)
                 return numeric_value
             except ValueError:
                 print("Please type only number.")
