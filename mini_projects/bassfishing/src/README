@@ -1,0 +1,86 @@
+#java를 이용한 단순 계산기.
+# README만 읽어도 충분히 사용가능하나, example.java에도 예문과 주석을 달아놓았습니다.
+
+# [주의] 잦은 리팩토링/디버깅으로 인해 현재 TODO 외 대다수 맞지 않아서 재작성 필요.
+utility 와 data, output 별로 분리작성 필요.
+
+bassfishing.utility.Converter
+    Coverter.Line(double, String)       ->    double
+        - 라인 호수,lb 상호 변환기. 유틸리티클래스며, 인스턴스 없이 사용
+        - 단사 전용 합사 금지. 선형적 규칙을 따르는 호수/파운드 변환이므로 배스라인은 거의 정확
+        - 매개변수 double 파워, String 단위("lb" 혹은 "ho") 를 기본으로 사용
+        - 두 번째 매개변수는 현재 단위를 넣어야 함. 알아서 전환됨
+            e.g) 4호 라인을 lb로 변환
+                Coverter.Line(4, "ho")          ->      16.0
+
+    Converter.Sinker(double, String)    ->    double
+        - 싱커무게 gram, 호수 상호변환기
+        - Line과 사용법이 같음. 다만 "lb" 대신 "g" 로 사용.
+            e.g) 3호 싱커를 gram으로 변환
+                Converter.Sinker(3, "ho")       ->      11.25
+
+
+bassfishing.utility.ReelLineCapa
+    // 추가된 메서드 추가 필요.
+    // 수정필요. 인스턴스를 필요로하지 않고 매개변수로 Reel을 받음.
+    - getOtherLineCapa: 새로 감을 라인과 파워단위를 기입하면 권사량이 리턴된다.
+        (instance).getOtherLineCapa(double, double)                         ->      (return double)
+        (instance).getOtherLineCapa(라인 파워, 파워단위:"ho" or "lb")       ->      새 권사량
+        e.g)        myReel.getOtherLineCapa(12, "lb")                       ->      105.0
+
+
+// 수정필요. 위치가 output으로 변경됨. 또한 매개변수로 ReelLineCapa 대신 Reel 객체를 받음.
+// 길이와 오차보정(6lb) 상수처리의 위치가 ReelLineCapa 에서 SimplePrint 로 변경됨. 이에따른 명시 필요.
+bassfishing.utility.SimplePrint
+    - 출력문 확인을 위한 편의도구. 유틸리티클래스 디자인으로, 객체를 생성하지 않는다.
+    - 모든 종속을 이곳에서 가지고 있기 때문에, ReelLineCapa와 SimplePrint 만 import 하면 모든 기능이 작동된다.
+
+    - Line 클래스나 Sinker 클래스는 즉시 사용
+        e.g) SimplePrint.printSinkerConvert(14, g);                 // 14.0g: 3.73호
+        e.g) SimplePrint.printLineConvert(12, lb);                  // 12.0lb: 3.0호
+    
+    - ReelLineCapa관련 출력을 할 땐 매개변수에 ReelLineCapa 인스턴스를 참조해야 한다.
+        e.g) SimplePrint.printOtherLine(myReel, 16, lb);            // 4.0ho-16lb 78.8m
+    
+    - 매개변수로 객체만 넘기면 4lb ~ 20lb 까지 모두 출력된다 (SimplePrint 클래스 내 printOtherLine메서드에서 시작/끝 편집 가능)
+        e.g) SimplePrint.printOtherLine(myReel);        
+            myReel:
+                1.0ho-4lb 315.0m (오차주의)
+                1.5ho-6lb 210.0m (오차주의)
+                2.0ho-8lb 157.5m (오차주의)
+                2.5ho-10lb 126.0m
+                3.0ho-12lb 105.0m
+                3.5ho-14lb 90.0m (Base)
+                4.0ho-16lb 78.8m
+                4.5ho-18lb 70.0m
+                5.0ho-20lb 63.0m (오차주의)
+        
+
+        
+TODO. example.java에도 TODO리스트 있으면. 긴급사항.
+TODO. 예외처리클래스(단위오류) 작성. 모든 클래스에서 쓰일 계획.
+TODO. json으로 사용자의 릴 정보를 관리할 데이터 관리 클래스 필요. 릴 추가, 수정, 삭제. ReelLineCapa 등과 연동될 수 있도록 함.
+TODO. ReelLineCapa 에 여분스풀 여부는 항상 false로 다루고, 만약 있다면 복사생성하여 새로 스펙을 입력받고 위 출력기능을 같이 출력.
+TODO. 단사라인 종류만 가능한 상태, 합사(PE) 추가. (합사로 인한 수식보정, 라인종류 멤버변수 추가 등 고려)
+TODO. 주석 정리
+TODO. README 개선.
+
+251020. 디버그: output.Console.printOtherLineLength 매개변수의 라인타입 HO로 입력 받으면 오차주의 나오던 논리오류 해결.
+251020. Reel 객체의 toString() 오버라이드.
+251020. ReelLineCapa.getOtherLineCapa -> ReelLineCapa.getOtherLineLength 로 이름 변경. 다양한 상황별 매개변수 오버로딩.
+251020. SimplePrint -> Console 로 클래스명 변경.
+251020. Line, Sinker의 유닛타입 열거체 모든 코드에 적용.
+251020. 유닛타입(호, gram, lb) 등을 enum으로 관리하기 위해 units 모듈 추가.
+251019. SimplePrint를 bassfishing.output으로 분리작성.
+251019. converter.Line, converter.Sinker 클래스들을 Converter.java로 통합 후 Line, Sinker 멤버메서드로 변경
+251019. ReelLineCapa를 유틸리티클래스로 변경. 매개변수를 Reel객체로 받아 인스턴스 생성 없이 즉시 권사량 계산만 처리
+251019. Reel 데이터클래스 작성
+251017. SimplePrint 생성으로 인한 Sinker.java, Line.java, ReelLineCapa의 출력문 메서드 모두 삭제 (병렬관리)
+251017. SimplePrint 클래스 생성: 모든 출력 담당.
+251013. Main.java -> example.java 로 변경.
+251013. ReelLineCapa 'ho'로 사용시 일으키는 문제들 디버그. 
+251012. ReelLineCapa 의 배스용 주 사용라인(단사기준 4lb~20lb) 까지 2lb단위로 모두 출력기능 첨부
+251012. ReelLineCapa 의 릴이름 String name 멤버변수 추가
+251012. LineConverter 는 사실상 세번 째 매개변수를 받을 필요가 없음. (호 - lb)간 상호전환만 되기 때문.
+251012. 싱커 호-gram 변환기 클래스 추가
+251012. ReelLineCapa 의 basePower는 사실상 쓸모 없음. 
