@@ -72,7 +72,7 @@ def solvePossible(board: list) -> list:
         updated = False
         emptyPos = getEmptyPos(board)
         for pos in emptyPos:
-            p_nums = possibleNums(*pos, board)
+            p_nums = possibleNums(*pos, board = board)
             if len(p_nums) == 1:
                 board[pos[0]][pos[1]] = p_nums[0]
                 updated = True
@@ -85,7 +85,7 @@ def getPriority(board: list) -> tuple:
     res = (0, 0)
     res_len = 9
     for pos in emptyPos:
-        p_nums = possibleNums(*pos, board)
+        p_nums = possibleNums(*pos, board = board)
         if len(p_nums) < res_len:
             res_len = len(p_nums)
             res = pos
@@ -94,7 +94,7 @@ def getPriority(board: list) -> tuple:
     return res
 
 # 백트래킹을 사용하여 스도쿠 퍼즐을 해결하는 함수
-def bfSolve(board: list) -> list:
+def bfSolve(board: list) -> list | bool:
     if not checkBoard(board):   # 보드가 유효하지 않으면 False 반환
         return False 
     
@@ -106,7 +106,7 @@ def bfSolve(board: list) -> list:
     if priorityPos == (-1, -1): # getPriority 결과 가능한 숫자가 없는 경우 -> 아래 백트래킹 진입
         return False            #! debug: 처음엔 아래 isSolved랑 조건을 묶어 board를 리턴했으나, 자세히 생각해보면 백트래킹 진입을 위해 False가 맞음.
 
-    priorityPosPossibleNums: list = possibleNums(*priorityPos, board)
+    priorityPosPossibleNums: list = possibleNums(*priorityPos, board = board)
 
     for guess in priorityPosPossibleNums:  # 가능한 숫자 시도
         lastBoard: list = [row[:] for row in board]  # 현재 상태 저장
@@ -125,15 +125,15 @@ def bfSolve(board: list) -> list:
     return False  # 모든 경우 실패 시 False 반환
 
 # 위 모든 함수들을 종합하여 자동으로 실행.
-def solve(board: list) -> list:
+def solve(board: list[list[int]]) -> list | bool:
     return board if checkBoard(board) and isSolved(board) else bfSolve(board)
 
 
 ###! 챌린지 요구조건 외 직접 커스텀한 함수들이 아래에 추가됨: 사용자 입출력 함수
 
 # 보드 출력함수. 비어있는경우 강제 리턴.
-def prettyPrintSudoku(board: list) -> None:
-    if not board:  # 보드에 문제가 있으면 None으로 해석되는 상태.
+def prettyPrintSudoku(board: list | bool) -> None:
+    if type(board) == bool:  # 보드에 문제가 있으면 None으로 해석되는 상태.
         print("ERR:\nSomething Wrong.")
         return
     
@@ -262,7 +262,7 @@ badpz2 = [[1,1,1,0,0,0,0,0],
 # prettyPrintSudoku(solve(pz1))
 # prettyPrintSudoku(solve(pz2))
 # prettyPrintSudoku(solve(pz3))
-# prettyPrintSudoku(solve(pz4))
+prettyPrintSudoku(solve(pz4))
 
 # 오류 테스트케이스; ERR: Something Wrong. 출력 -> OK
 # prettyPrintSudoku(solve(badpz1))
@@ -271,7 +271,7 @@ badpz2 = [[1,1,1,0,0,0,0,0],
 
 #! 사용자입력 자동풀이 -> OK
 # prettyPrintSudoku(solve(readSudoku())         # 한칸씩 진행.
-prettyPrintSudoku(solve(readSudokuSector()))  # 섹터단위 진행.
+# prettyPrintSudoku(solve(readSudokuSector()))  # 섹터단위 진행.
 
 
 #! 현재 코드 작성 초기단계에 적어두었던 설계 계획 메모.
