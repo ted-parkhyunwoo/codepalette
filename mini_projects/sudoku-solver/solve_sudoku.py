@@ -17,19 +17,19 @@
 tmpIdx = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)]
 squareIdx = [[(x + i * 3, y + j * 3) for (x, y) in tmpIdx] for i in range(3) for j in range(3)]
 
-# 특정 좌표의 사각형 섹터를 리턴. 3*3 전화기 키패드패턴.
+# 특정 좌표의 사각형 섹터를 리턴. 3*3 전화기 키패드패턴(1~9)
 def getSquareSector(row: int, col: int) -> int:
     rowSector = (row // 3) + 1
     colSector = (col // 3) + 1
     return (rowSector - 1) * 3 + colSector
 
 # 특정 사각형섹터의 요소들을 찾아 리스트로 리턴하는 함수. (0도 포함됨.)
-def getSquareSectorElements(sector: int, board:list) -> list:
+def getSquareSectorElements(sector: int, board:list[list[int]]) -> list:
     sectors = {i+1 : squareIdx[i] for i in range(9)}
     return [board[pos[0]][pos[1]] for pos in sectors[sector]]
 
 # 특정 좌표에 대입 가능한 요소들을 찾는 함수(0 일때만 정상사용 가능하며, 아닐시 비어있는 배열 리턴.)
-def possibleNums(x:int, y:int, board:list) -> list:
+def possibleNums(x:int, y:int, board:list[list[int]]) -> list:
     if board[x][y] != 0: return []
     rowE = [(board[x][i]) for i in range(9) if board[x][i] != 0] 
     colE = [(board[i][y]) for i in range(9) if board[i][y] != 0]
@@ -38,12 +38,12 @@ def possibleNums(x:int, y:int, board:list) -> list:
     return [i for i in range(1, 10) if i not in allE]
 
 # 비어있는 칸의 좌표들을 찾아 (x, y):tuple 리스트로 만들어 리턴하는 함수.
-def getEmptyPos(board: list) -> list:
+def getEmptyPos(board:list[list[int]]) -> list:
     return [(x, y) for x in range(9) for y in range(9) if board[x][y] == 0]
 
-# 보드의 유효성 검사: bad puzzle checker.
-def checkBoard(board: list) -> bool:
-    # 9 * 9 검사
+# 보드의 유효성 검사: bad puzzle checker. 9 * 9와 라인,섹터당 중복요소를 체크함.
+def checkBoard(board:list[list[int]]) -> bool:
+    # 9 * 9 검사: 각 리스트의 숫자 길이 검사.
     if len(board) != 9: return False
     for i in range(9):
         if len(board[i]) != 9: return False
@@ -60,14 +60,14 @@ def checkBoard(board: list) -> bool:
     return True
 
 # 해결된 sudoku인지 검토: 0이 있는지만 점검하며, 유효성 검사는 안함.
-def isSolved(board: list) -> bool:
+def isSolved(board:list[list[int]]) -> bool:
     for row in board:
         for num in row:
             if num == 0: return False
     return True
 
 # 가능한 경우의 수가 1개인 0을 불가능 할 때 까지 해결하는 함수
-def solvePossible(board: list) -> list:
+def solvePossible(board:list[list[int]]) -> list[list[int]]:
     while True:
         updated = False
         emptyPos = getEmptyPos(board)
@@ -80,7 +80,7 @@ def solvePossible(board: list) -> list:
     return board
 
 # 가장 먼저 해결해야할 좌표(tuple)를 골라 리턴하는 함수.
-def getPriority(board: list) -> tuple:
+def getPriority(board:list[list[int]]) -> tuple:
     emptyPos = getEmptyPos(board) 
     res = (0, 0)
     res_len = 9
@@ -94,7 +94,7 @@ def getPriority(board: list) -> tuple:
     return res
 
 # 백트래킹을 사용하여 스도쿠 퍼즐을 해결하는 함수
-def bfSolve(board: list) -> list | bool:
+def bfSolve(board:list[list[int]]) -> bool | list[list[int]]:
     if not checkBoard(board):   # 보드가 유효하지 않으면 False 반환
         return False 
     
@@ -125,14 +125,14 @@ def bfSolve(board: list) -> list | bool:
     return False  # 모든 경우 실패 시 False 반환
 
 # 위 모든 함수들을 종합하여 자동으로 실행.
-def solve(board: list[list[int]]) -> list | bool:
+def solve(board:list[list[int]]) -> bool | list[list[int]]:
     return board if checkBoard(board) and isSolved(board) else bfSolve(board)
 
 
 ###! 챌린지 요구조건 외 직접 커스텀한 함수들이 아래에 추가됨: 사용자 입출력 함수
 
 # 보드 출력함수. 비어있는경우 강제 리턴.
-def prettyPrintSudoku(board: list | bool) -> None:
+def prettyPrintSudoku(board: bool | list[list[int]]) -> None:
     if type(board) == bool:  # 보드에 문제가 있으면 None으로 해석되는 상태.
         print("ERR:\nSomething Wrong.")
         return
@@ -151,7 +151,7 @@ def prettyPrintSudoku(board: list | bool) -> None:
         print()
 
 # 보드 입력함수(한칸씩 진행, 그냥 엔터치면 0으로 입력함.)
-def readSudoku() -> list:
+def readSudoku() -> list[list[int]]:
     res = []
     tmp = []
     for i in range(9):
@@ -171,7 +171,7 @@ def readSudoku() -> list:
 7 8 9
 순서로 구역별 입력. 구역과 구역내 요소들은 항상 좌측 상단순서로 시작한다.
 """
-def readSudokuSector() -> list:  
+def readSudokuSector() -> list[list[int]]:  
     res = [[0 for _ in range(9)] for _ in range(9)]
     for sector in range(1, 10):
         sector_input = input(f"Enter numbers for sector {sector}: ")
