@@ -28,7 +28,14 @@ const p_text = document.getElementById("text");
 //! 3. textContent  : 태그가 담고 있는 컨텐츠(내용) 리턴
 console.log(h1.textContent);
 
-// content 변경시
+// 내용 변경시. (함수로 호출하진 않음. 속성접근: 함수처럼 작동. 아래 주석 참고)
 h1.textContent = "!변경된 제목";
 p_text.textContent = "!변경된 문단"
 console.log(p_text);
+
+
+// getter, setter가 모두 정의된 attribute. 
+// 그냥 쓰면 리턴되지만(메서드가 아닌데도 불구하고), 대입시 변경
+// 내부적으로 xx.textContent 는 get textContent() 호출, xx.textContent = "내용" 은 set textContent("내용")으로 호출됨.
+
+// attributes_use.js 참고.
