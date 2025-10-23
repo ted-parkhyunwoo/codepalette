@@ -1,7 +1,7 @@
 from pprint import pprint
-myList = [3, 1, 4, 1]
-
 from itertools import combinations, permutations
+
+myList = [3, 1, 4, 1]
 
 # 조합
 combsRes = []

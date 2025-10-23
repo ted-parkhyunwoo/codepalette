@@ -1,6 +1,8 @@
 import java.math.BigInteger;
 import java.util.ArrayList;
 
+//! 단순 순열/조합의 공식 계산이지, 파이썬 코드처럼 실제로 줄을 세우진 못하는 상태.
+
 public class permute {
 
     public static BigInteger getFactorial(int num) {
