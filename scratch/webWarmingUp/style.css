@@ -1,0 +1,19 @@
+
+/* 태그에 직접 지정 */
+h1 {
+    color: gray;
+}
+
+/* class 는 .class */
+.msg{
+    color: green;
+}
+
+/* id 는 #id */
+#mydiv {
+    color: red;
+}
+
+#res {
+    font-size: 500%;
+}
