@@ -1,8 +1,5 @@
+package java_uf;
 import java.util.Arrays;
-
-// class my {
-//     static <T> void print(T t) { System.out.println(t); }
-// }
 
 public class UF {
     private final int size;
@@ -36,14 +33,4 @@ public class UF {
         return Arrays.toString(this.node);
     }
 
-    // main test
-    // public static void main(String[] args) {
-    //     UF a = new UF(5);
-    //     a.union(0, 3);
-    //     a.union(3, 2);
-    //     a.union(4, 0);
-    //     my.print(a.isConnect(0, 2));
-    //     my.print(a.isConnect(1, 0));
-    //     my.print(a);
-    // }
 }

@@ -3,8 +3,7 @@
 #include <stack>
 #include <concepts>
 
-// 확인: 전통적인 C스타일 배열(int, char), vector<int> vector<char>
-
+// 확인: 전통적인 C스타일 배열(int, char), vector<int>
 template <typename T>
 void bsort(T& t) requires (std::same_as<T, std::vector<int>>) {
     size_t sz = t.size();
@@ -46,10 +45,6 @@ int main() {
 
     bsort(arr);
     print(arr);
-    
-
-
-    
 
     return 0;
 }
