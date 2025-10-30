@@ -6,7 +6,9 @@
 
 // sudo ldconfig 실행해야함.
 // 컴파일도 명시해줘야함. gcc main2.c -o main2 -lmylib
-// lmylib 은 libmylib.so를 찾음
+// lmylib 은 libmylib.so를 찾음 (/usr/local/lib 혹은 /usr/lib 에서.)
+// #include <mylib.h> 는 /usr/include 혹은 /usr/local/include 에서 찾음.
+
 int main() {
     
     printWelcome("Ted");
