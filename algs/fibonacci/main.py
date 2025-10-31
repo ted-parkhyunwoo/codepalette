@@ -17,16 +17,16 @@ def getFib(n: int) -> int: # return type: unsigned long long int -> int(python)
 def getFibRange(start:int, end:int) -> None:
     #! 92 이상 예외처리 추가하지 않으면 C에서 강제종료 예외처리되므로, 파이썬이 제외권 상실함. print("BYE") 출력이 안됨.
     if end > 92:    
-        print("Warning: 92 이상을 쓸 수 없음.")
+        print("Warning: 92 넘는 수는 쓸 수 없음.")
         end = 92
-    for i in range(start, end):
-        print(fib_lib.getFib(i))
+    for i in range(start, end + 1):
+        print(f"{i}: {fib_lib.getFib(i)}")
 
 
 
 #! 메모리를 함수 내에서 관리하면 각 할당과 해제 등이 여러번 일어날 수 있다며 파이썬에서 실행 불가.
 fib_lib.initMemo(100)
-print(getFib(92))
+print(getFib(92))   # 직접호출 주의: 92 초과시 c에서 강제종료로 제어권 잃음.
 getFibRange(0, 100)
 fib_lib.freeMemo()
 

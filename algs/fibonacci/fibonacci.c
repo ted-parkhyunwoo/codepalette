@@ -30,23 +30,3 @@ ULL getFib(int n) {
 
 void freeMemo() { free(memo); }
 
-
-/* for문 타입
-unsigned long long int getFib(int n) {
-    if (n <= 1) return n;
-    if (n > 92) {
-        printf("Error: Index %d causes unsigned long long overflow.\n", n);
-        return 0;
-    }
-    unsigned long long int f0 = 0;
-    unsigned long long int f1 = 1;
-    unsigned long long int tmp;
-    for (int i = 1; i < n; ++i) {
-        tmp = f0 + f1;
-        f0 = f1;
-        f1 = tmp;
-    }
-    return tmp;
-}
-
-*/
