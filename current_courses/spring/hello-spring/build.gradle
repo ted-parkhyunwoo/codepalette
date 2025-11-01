@@ -23,6 +23,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'		// 개발/디버깅용 실시간 적용. Spring Boot Extension Pack 를 설치하고 f5(디버깅. 반드시) 로 실행 후 번개버튼을 누르면 실시간으로 바뀜. browser에는 LiveReload 확장을 설치하여 활성화 할 것. 현재 변경시마다 적용되는건 어떻게 해도 실패함.
 }
 
 tasks.named('test') {
