@@ -4,4 +4,5 @@
 
 libfibonacci.so 혹은 libfib.so를 컴파일 하지 않으면 작동하지 않음. OS별로 다름
 일부 os에선 환경변수로 LD_LIBRARY_PATH를 지정해야 main.cpp 혹은 main.c가 작동할 수도 있음.
+e.g) export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 windows os에선 DLL을 쓰며, 컴파일된 라이브러리 또한 어떤 경로(아직 모름)에 환경변수로 추가해야 한다고 알고 있음.
