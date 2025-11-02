@@ -4,3 +4,4 @@ __pycache__/
 *.javac
 .gradle/
 .venv/
+.idea/
