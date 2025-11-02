@@ -32,12 +32,13 @@ void prime(const size_t end, const bool justCount) {
     for (size_t i = 0; i <= end; ++i) {
         if (isPrime(i)) {
             sz++;
-            arr = (size_t*)realloc(arr, sz * sizeof(size_t));
-            if (arr == NULL) {
+            size_t* tmp = (size_t*)realloc(arr, sz * sizeof(size_t));       // 재할당 실패중 누수를 막기위한 임시포인터
+            if (tmp == NULL) {
                 perror("[FATAL ERROR] Memory reallocate error.\n");
                 free(arr);
                 return;
             }
+            arr = tmp;
             arr[sz - 1] = i;
         }
     }
@@ -89,56 +90,9 @@ void prime_che(const size_t end, const bool justCount) {
 }
 
 
-size_t* getPrime(const size_t end) {
-    bool* arr = (bool*)calloc(end + 1, sizeof(bool));
-    for (size_t i = 2; i <= end; ++i) {
-        arr[i] = true;
-    }
-
-    for (unsigned long long i = 2; i * i <= end; i++) { 
-
-        if (arr[i]) {
-            for (size_t j = i * i; j <= end; j += i) {
-                arr[j] = false;
-            }
-        }
-    }
-
-    // make size
-    size_t sz = 0;
-    for (size_t i = 2; i <= end; ++i) {
-        if (arr[i]) {
-            sz++;
-        }
-    }
-
-    // make array
-    size_t* primes = calloc(sz + 1, sizeof(size_t));
-    size_t tmpIdx = 0;
-    for (size_t i = 2; i <= end; ++i) {
-        if (arr[i]) {
-            primes[tmpIdx++] = i;
-        }
-    }
-    primes[tmpIdx] = 0;     // 배열 종료 트리거.
-    free(arr);
-
-    return primes;
-}
-
-
 int main() {
     const size_t test = 10000000000;
     // prime(test, true);               // 10억 초과시 굉장히 느림 주의.
-    // prime_che(test, true);           // 개선
-
-    const size_t getPrimeTest = 1000;
-    size_t* primes = getPrime(getPrimeTest);
-    for (size_t i = 0; i < primes[i] != 0; ++i) {     // 기저조건에 주의
-        printf("%zu ", primes[i]);
-    }
-
-    free(primes);
-
+    prime_che(test, true);           // 개선
     return 0;
 }
