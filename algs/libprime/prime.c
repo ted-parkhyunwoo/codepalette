@@ -38,31 +38,11 @@ size_t* get(const size_t end) {
     else                            limit = end / 20 + 50000000;    // 매우 큰 수, 안전 여유
 
     size_t* primes = calloc(limit, sizeof(size_t));        
-    size_t tmpIdx = 1;          // primes[0] 은 배열의 사이즈를 나타냄
+    size_t tmpIdx = 1;          // 0번은 배열사이즈를 넣을 계획
     for (size_t i = 2; i <= end; ++i) { if (!isNotPrime[i])     primes[tmpIdx++] = i; }
-    primes[0] = tmpIdx - 1;
+    // primes[0] 은 배열의 사이즈를 나타냄
+    primes[0] = tmpIdx - 1;         
     free(isNotPrime);
 
     return primes;
 }
-
-/*
-
-int main() {
-    // 주의! 어림잡아 100억 까지만 계산됨. 이것 또한 64비트 기준. (체 방식의 문제점으로, 너무 큰 배열을 할당.)
-    // 갯수만 세는 것과 다르게, 리턴배열을 또 할당하므로 100억 초과부터는 세그멘테이션 오류(메모리 할당오류)
-    const size_t getPrimeTest = 10000000000;
-    size_t* primes = get(getPrimeTest);
-    size_t size = 0;
-    for (size_t i = 1; i <= primes[0]; ++i) { 
-        // printf("%zu ", primes[i]); 
-        size++; 
-    }
-    free(primes);
-
-    printf("\nsize: %zu\n", size);
-
-    return 0;
-}
-
-*/

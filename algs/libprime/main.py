@@ -30,9 +30,6 @@ print(timeRes)
 # for i in range(1, c_ptr[0] + 1):
 #     print(i, c_ptr[i])
 
-
-
-
 # libc의 free호출
 #libc.free(c_ptr)
 
