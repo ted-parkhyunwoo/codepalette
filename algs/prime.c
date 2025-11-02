@@ -55,15 +55,42 @@ void prime(size_t end, bool justCount) {
 }
 
 void prime_che(size_t end, bool justCount)  {
-    // 작성중.
+    // 작성중. -    구현에 문제가 있어 더 느린상태.
     // 3부터 모든 수 나열
     // 짝수제거
     // 남은 수중 가장 작은수의 배수들을 작은수를 제외하고 제거
-    // 위를 반복(배수가 없는 구간"end / 2"까지)
+    // 위를 반복
+    size_t* arr = (size_t*)calloc(end + 1, sizeof(size_t));
+    size_t sz = 0;
+    arr[sz++] = 2;
+
+    for (size_t i = 3; i <= end; i += 2) {
+        arr[sz++] = i;
+        for (size_t j = 1; j < sz; ++j) {
+            if (i / 2 < arr[j]) break;
+            if (i == arr[j]) {
+                continue;
+            }
+            if (i % arr[j] == 0) {
+                arr[--sz] = 0;
+                break;
+            }
+        }
+    }
+    if (!justCount) {
+        for (size_t i = 0; i < sz; ++i) {
+            printf("%zu ", arr[i]);
+        }
+        printf("\n");
+    }
+    printf("%zu\n", sz);
+    free(arr);    
 }
 
 
 int main() {
-    prime(100000000, true);
+    size_t test = 100000;
+    prime(test, true);
+    prime_che(test, true);
     return 0;
 }
