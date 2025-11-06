@@ -14,7 +14,7 @@ void initData(data* d) {
 
 void descData(data* d) {
     for (int i = 0; i < SIZE; ++i) {
-        printf("%d: %d\n", i + 1, d->count[i]);
+        printf("%d: %ld\n", i + 1, d->count[i]);
     }
 }
 
