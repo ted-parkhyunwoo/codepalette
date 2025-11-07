@@ -5,7 +5,7 @@ import hello.hello_spring.repository.MemoryMemberRepository;
 import org.junit.jupiter.api.*;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.Fail.fail;
+// import static org.assertj.core.api.Fail.fail;
 
 
 class MemberServiceTest {
