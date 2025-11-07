@@ -12,7 +12,6 @@ typedef struct lottoStruct{
 } lotto;
 
 lotto* init() {
-    srand(time(NULL) * getpid());
     lotto* res = malloc(sizeof(lotto));
     res->size = 45;
     for (int i = 0; i < res->size; ++i) {
@@ -24,28 +23,27 @@ lotto* init() {
     return res;
 }
 
-void printLotto(lotto* l) {
+void printLotto(lotto* l, int printBonus) {
     for (int i = 0; i < 6; ++i) {
         printf("%d ", l->result[i]);
+        if (l->result[i] < 10) printf(" ");     // 한자리 숫자 줄맞춤
     }
-    printf(" b: %d\n", l->result[6]);
+    if (printBonus)                             // 보너스숫자 출력 (추천번호 조회할지, 당첨번호 생성할지 등에 쓰임)
+        printf(" b: %d\n", l->result[6]);
+    else
+        printf("\n");
 }
 
-int getRand(int start, int end) {
-    
-    int res = (rand() % end) + start;
-    return res;
+int getRand(int start, int end) {               // start, end가 포함됨.
+    return (rand() % end) + start;
 }
 
 int pop(lotto* l, int idx) {
     if (idx + 1 > l->size) return -1;
     int res = l->nums[idx];
-
-    for (int i = idx; i < l->size - 1; ++i) {
+    for (int i = idx; i < l->size - 1; ++i) 
         l->nums[i] = l->nums[i + 1];
-    }
-    l->size --;
-
+    l->size--;
     return res;
 }
 
@@ -55,20 +53,6 @@ void genLotto(lotto* l) {
         l->result[l->resSize] = pop(l, r);
         l->resSize++;
     }
-}
-
-
-// 같은번호 나오면 다시뽑는상태. pop방식 고려
-void oldGenLotto(lotto* l) {
-    while (l->resSize < 7) {
-        int r = getRand(0, 45);
-        while(l->nums[r] == 0) {
-            r = getRand(0, 45);
-        }
-        l->nums[r] = 0;
-        l->result[l->resSize] = r + 1;
-        l->resSize += 1;
-    } 
 }
 
 void sortResult(lotto* l) {
@@ -83,33 +67,19 @@ void sortResult(lotto* l) {
     }
 }
 
-
-void debugPrint(lotto* l) {
-    printf("size: %d\narray: ", l->size);
-    for (int i = 0; i < l->size; ++i) {
-        printf("%d ", l->nums[i]);
+void wrapper(unsigned gen, int bonus) {            // 출력용 생성기 래퍼함수. gen은 갯수를 나타냄. bonus는 보너스번호 출력여부
+    srand(time(NULL) * getpid());
+    while (gen > 0) {
+        lotto* test = init();
+        genLotto(test);
+        sortResult(test);
+        printLotto(test, bonus);
+        free(test);
+        gen--;
     }
-    printf("\n");
 }
-
-void wrapper() {
-    lotto* test = init();
-    genLotto(test);
-    sortResult(test);
-    printLotto(test);
-    free(test);
-}
-
-void poptest() {
-    lotto* test = init();
-    debugPrint(test);
-    pop(test, 1);
-    debugPrint(test);
-    free(test);
-}
-
 
 int main() {
-    wrapper();
+    wrapper(5, 0);
     return 0;
 }
