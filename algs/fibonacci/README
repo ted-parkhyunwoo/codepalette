@@ -5,4 +5,8 @@
 libfibonacci.so 혹은 libfib.so를 컴파일 하지 않으면 작동하지 않음. OS별로 다름
 일부 os에선 환경변수로 LD_LIBRARY_PATH를 지정해야 main.cpp 혹은 main.c가 작동할 수도 있음.
 e.g) export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+
+gcc main.c -L. -lfib -Wl,-rpath,. 이런식으로 -Wl, -rpath,. 를 추가하여 컴파일 하면 현재 디렉토리에서도 so파일을 검색함.
+// 위는 /usr/local/lib 혹은 /usr/lib에 있는지 먼저 탐색하고 찾음(검증함). /usr/local/lib 등에 넣고는 라이브러레 업데이트 sudo ldconfig 실행.
+
 windows os에선 DLL을 쓰며, 컴파일된 라이브러리 또한 어떤 경로(아직 모름)에 환경변수로 추가해야 한다고 알고 있음.

@@ -8,7 +8,8 @@ void printWelcome(char* name);
 // 컴파일: gcc main.c -o main -L. -lmylib
 // LD_LIBRARY_PATH=. ./main
 //! LD_LIBRARY_PATH 를 쓰기 싫다면 /usr/lib 이나 /usr/local/lib 등에 넣어야함.
-
+//! 만약 /usr/lib 이나 /usr/local/lib 등의 경로 대신 지정하고싶다면.  쉼표의 의미는 구분자(option argument 구분자)
+// gcc main.c -o main -L. -lmylib -Wl, -rpath,.
 
 // 실험해볼것.
 // stdio.h 처럼 전역에서 쓰고싶으면 상단 정의를 h로 분리해 /usr/include 혹은 /usr/local/include 등에 넣고
