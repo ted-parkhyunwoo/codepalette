@@ -24,12 +24,18 @@ template <typename C> void select(C& v, bool ascending = true);
 // 특징: 0번은 정렬된 상태로 보고 1번 idx부터 비교조건검사와 배열 밀어내기 후 특정위치 삽입. 끝날때 까지 정렬이 확정되지 않음.
 template <typename C> void insert(C& v, bool ascending = true);
 
+// 쉘정렬 : 삽입정렬의 개선(증분, gap 활용). 삽입의 경우 매우 불량한 정렬에 진행하면 많은 이동이 일어남 -> shell sort로 해결
+// 특징: step(gap) 만큼의 배열을 조작하며, step은 더 작게(/2)로 갱신(1이 될때 까지이며, 1일때 삽입정렬과 똑같아짐. 하지만 거의 정렬되어 빠름)
+// step(gap)과 갱신은 둘다 /2로 제안됐으나, 마음대로 해도 됨. 다만, 크누스수열(3^k + 1), 치우라수열(실험검증수열)이 가장 빠르다고 알려짐.
+// 크누스 수열은 knuth.c 참고
+template <typename C> void shell(C& v, bool ascending = true);
+
 
 // 사용예제 (필요에 따라 select, bubble, insert 변경, ascending 에 false등을 삽입하여 사용)
 int main() {
     // 정수형 vector
     vector<int> a = {8, 4, 2, 5, 1, 7, 0, 3, 9, 6};
-    select(a);
+    shell(a);
     printVector(a);
 
     // 문자열 vector
@@ -101,5 +107,23 @@ void insert(C& v, bool ascending) {
             --j;                            // 비교대상 인덱스 업데이트
         }
         v[j] = mem;                         // 삽입대상을 비교대상 인덱스(밀어내기 후)에 삽입.
+    }
+}
+
+template <typename C>
+void shell(C& v, bool ascending) {
+    const uint sz = v.size();
+    uint step = sz / 2;
+    while (step > 0) {
+        for (uint i = step; i < sz; ++i) {      // 삽입정렬처럼 v[i] 는 삽입대상. i - step만큼의 배열들이 비교대상(i 대신 j로 할당하며 j -= step으로 업데이트)
+            const auto mem = v[i];
+            uint j = i;
+            while (j >= step && condition(v[j - step], mem, ascending)) {       // j 와 step이 같은경우(>=)도 포함해야 j - step으로 idx: 0 까지 접근 된다.
+                v[j] = v[j - step];
+                j -= step;
+            }
+            v[j] = mem;
+        }
+        step /= 2;
     }
 }
