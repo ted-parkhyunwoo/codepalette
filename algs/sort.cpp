@@ -65,7 +65,7 @@ bool condition(const T& a, const T& b, bool ascending) {
 }
 
 bool condition(const std::string& a, const std::string& b, bool ascending) {
-    const u_int minSize = std::min(a.size(), b.size());
+    const uint minSize = std::min(a.size(), b.size());
     for (uint i = 0; i < minSize; ++i) {
         if (a[i] == b[i]) continue;
         return ascending? a[i] > b[i] : a[i] < b[i];
