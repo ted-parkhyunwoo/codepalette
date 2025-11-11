@@ -2,7 +2,47 @@
 #include <stdlib.h>
 #include <time.h>
 
-// algs/sort.cpp 를 복습겸 c로 구현. 정수형 배열이며, 전통적 배열을 사용.
+// algs/sort.cpp 를 복습겸 c로 구현. "정수형" 배열이며, 전통적 c배열을 사용(int arr[]). 오름차순만 적용중
+
+// Prototypes:
+// 정렬함수들이 상속하는 swap과 배열출력 편의를 위한 printArr
+void swap(int* a, int* b);
+void printArr(int* arr, unsigned size);
+// 기본적인 정렬알고리즘의 기초
+void bubble(int* arr, unsigned size);
+void select(int* arr, unsigned size);
+void insert(int* arr, unsigned size);
+void shell(int* arr, unsigned size);
+void knuth_shell(int* arr, unsigned size);
+// 정렬알고리즘의 소요시간을 검사하기 위한 메소드.
+void doTest(void (*func)(int*, unsigned), unsigned loop, long SIZE, int MAX);
+void testWrapper(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long SIZE, int MAX);
+
+
+// 메인함수
+int main() {
+    // 기본테스트
+    int arr[] = { 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 };
+    int arrSz = sizeof(arr) / sizeof(arr[0]);
+    printArr(arr, arrSz);
+    shell(arr, arrSz);         // 정렬함수 변경 가능
+    printArr(arr, arrSz);
+
+    // 소요시간 체크
+    // 옵션
+    void (*funcs[])(int*, unsigned) = { shell, knuth_shell };   // 함수 첨삭 가능
+    int initSrand = 1;                                          // rand시드 초기화여부. 수정가능 (0 || 1)
+    unsigned loop = 5;                                          // 평균 구할 루프 횟수. 수정가능
+    long SIZE = 10000000;                                       // 랜덤생성할 배열의 크기(기본권장: 1만~10만, 쉘-크누스쉘 실험시 1000만도 안정적.)
+    int MAX = 10000;                                            // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
+
+    // 검사 실행
+    testWrapper(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), SIZE, MAX);      // 코드 구조를 알기 전 까진 매개변수 수정은 권장하지 않음.
+    return 0;
+}
+
+
+// 함수 구현부
 
 void swap(int* a, int* b) {
     int tmp = *a;
@@ -41,6 +81,7 @@ void select(int* arr, unsigned size) {
     }
 }
 
+// i를 기준으로 i의 좌측 배열만 조정하며, 최소값/최대값 등을 저장후 삽입위치 정해질 때 까지 배열을 한칸씩 밀어냄.
 void insert(int* arr, unsigned size) {
     for (int i = 1; i < size; ++i) {    // 코드가 배열을 i기준으로 나누어 좌측, 우측배열을 비교하는 방식이므로, 1부터 시작.
         int buffer = arr[i];           // 현재 요소 저장 (index로 사용하지 않는 이유는 j를 다루는 배열에서 이곳의 idx로 밀어낼 수 있음.)
@@ -52,7 +93,12 @@ void insert(int* arr, unsigned size) {
     }
 }
 
-// 쉘정렬은 insert의 확장개념. insert에서 int i = 1과 arr[j - 1]에 해당하는 부분이 gap(step)으로 관리되며 크기는 아무렇게나 줄여도 상관없으나, 마지막엔 항상 1을 실행해야함.
+// 쉘정렬은 insert의 확장개념. insert에서 int i = 1과 arr[j - 1]에 해당하는 부분이 gap(step)으로 관리되며 크기는 아무렇게나 줄여도 상관없으나, 마지막엔 항상 1을 실행해야 정확도를 보장함.
+// gap(step) : size / 2로 갱신할 것을 제안했으나, knuth수열(3^k - 1) / 2 (혹은 3new = 3old + 1) 혹은 치우라 실험검증 수열이 가장 빠르다고 알려짐. size / 2갱신도 충분히 빠름
+/* //!압도적으로 빠른 이유 분석: 
+1. 순수 삽입정렬은 매우 큰 이동이 필요한 경우(오름차순인데 마지막이 1처럼 극단적으로 작은 경우) 아주 잦은 이동이 필요함. 이것의 횟수를 증분활용을 통해 획기적으로 줄임.
+2. 삽입정렬은 애초에 어느정도 정렬되어 있어야 빠른데(데이터 이동 최소화), 증분의 단계중 이전 단계가 현재의 단계를 거의 완성시켜놓음.
+*/ 
 void shell(int* arr, unsigned size) {
     int step = size / 2;
     while (step > 0) { 
@@ -67,17 +113,30 @@ void shell(int* arr, unsigned size) {
     }
 }
 
-// 정렬 시간 구하기 테스트
-void doTest(void (*func)(int*, unsigned), int loop) {
-    // 1~100만까지의 수를 랜덤으로 10만개 뽑음
-    int SIZE = 100000;
-    int MAX = 1000000;
+// shell 정렬의 크누스수열 적용(연속된 값들이 서로의 약수가 되지 않도록 설계되어 최적화)
+void knuth_shell(int* arr, unsigned size) {
+    int step = 1;
+    while(step < size / 3) { step = 3 * step + 1; }     // step 초기화
+    while (step > 0) { 
+        for (int i = step; i < size; ++i) {
+            int buffer = arr[i];
+            int j = i;
+            for (; j >= step && arr[j - step] > buffer; j -= step) 
+                arr[j] = arr[j - step];
+            if (j != i) { arr[j] = buffer;}
+        }
+        step /= 3;                                      // step 갱신
+    }    
 
+}
+
+// 정렬 시간 구하기 테스트
+void doTest(void (*func)(int*, unsigned), unsigned loop, long SIZE, int MAX) {
     int* data = malloc(sizeof(int) * SIZE);
     double spentTimes[loop];
 
     for (int i = 0; i < loop; ++i) {
-        for (int i = 0; i < SIZE; ++i)      data[i] = rand() % MAX + 1;
+        for (long i = 0; i < SIZE; ++i)      data[i] = rand() % MAX + 1;
         clock_t start = clock();
         func(data, SIZE);
         spentTimes[i] = (double)(clock() - start) / CLOCKS_PER_SEC;
@@ -90,17 +149,8 @@ void doTest(void (*func)(int*, unsigned), int loop) {
     printf("average time spent: %.6f s.\n", totalSpent / loop);
 }
 
-int main() {
-    int arr[10] = { 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 };
-    printArr(arr, 10);
-    shell(arr, 10);
-    printArr(arr, 10);
-
-    // 정렬시간 구하기 테스트함수 사용
-    srand(time(NULL));
-    void (*funcs[])(int*, unsigned) = { bubble, select, insert, shell };        // 추가/삭제 가능. funcSize 는 알아서 추론
-    int funcsSize = sizeof(funcs) / sizeof(funcs[0]);
-    for (int i = 0; i < funcsSize; ++i)                         doTest(funcs[i], 1);
-    
-    return 0;
+// 정렬시간 구하기 테스트의 세팅.       // srand의 시드 제공여부, loop횟수, functions 배열, 배열사이즈 를 매개변수로 받음
+void testWrapper(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long SIZE, int MAX) {
+    if (init_srand)                             (time(NULL));
+    for (unsigned i = 0; i < funcsSize; ++i)    doTest(funcs[i], loop, SIZE, MAX);
 }
