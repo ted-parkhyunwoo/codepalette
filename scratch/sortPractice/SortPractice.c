@@ -2,21 +2,32 @@
 #include <stdlib.h>
 #include <time.h>
 
-// algs/sort.cpp 를 복습겸 c로 구현. "정수형" 배열이며, 전통적 c배열을 사용(int arr[]). 오름차순만 적용중
+// 작성된 정렬: 버블, 선택, 삽입, 쉘, 크누스수열 개선쉘, 퀵
+
 
 // Prototypes:
 // 정렬함수들이 상속하는 swap과 배열출력 편의를 위한 printArr
-void swap(int* a, int* b);
+inline void swap(int* a, int* b);
 void printArr(int* arr, unsigned size);
-// 기본적인 정렬알고리즘의 기초
+
+// 기초적인 정렬
 void bubble(int* arr, unsigned size);
 void select(int* arr, unsigned size);
 void insert(int* arr, unsigned size);
+
+// shell sort
 void shell(int* arr, unsigned size);
-void knuth_shell(int* arr, unsigned size);
+void knuth_shell(int* arr, unsigned size);                              // shell정렬에 크누스 수열 적용되며, 변동과 검사가 잦은 값 register int 사용
+
+// quick sort
+void quickSort(int* arr, int left, int right);                          // quick 프로토타입
+void quick(int* arr, unsigned size) { quickSort(arr, 0, size - 1); }    // 테스트의 양식에 맞게 사용하기 위한 wrapper함수
+
 // 정렬알고리즘의 소요시간을 검사하기 위한 메소드.
 void doTest(void (*func)(int*, unsigned), unsigned loop, long SIZE, int MAX);
 void testWrapper(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long SIZE, int MAX);
+
+
 
 
 // 메인함수
@@ -25,39 +36,43 @@ int main() {
     int arr[] = { 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 };
     int arrSz = sizeof(arr) / sizeof(arr[0]);
     printArr(arr, arrSz);
-    shell(arr, arrSz);         // 정렬함수 변경 가능
+    quick(arr, arrSz);         // 정렬함수 변경 가능
     printArr(arr, arrSz);
 
-    // 소요시간 체크
-    // 옵션
-    void (*funcs[])(int*, unsigned) = { shell, knuth_shell };   // 함수 첨삭 가능
-    int initSrand = 1;                                          // rand시드 초기화여부. 수정가능 (0 || 1)
-    unsigned loop = 5;                                          // 평균 구할 루프 횟수. 수정가능
-    long SIZE = 10000000;                                       // 랜덤생성할 배열의 크기(기본권장: 1만~10만, 쉘-크누스쉘 실험시 1000만도 안정적.)
-    int MAX = 10000;                                            // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
 
+
+    // 성능 테스트
+    // 기본정렬 테스트
+    void (*funcs[])(int*, unsigned) = { bubble, select, insert, shell, knuth_shell, quick };   // 정렬 함수 첨삭 가능
+    int initSrand = 1;                                          // rand시드 초기화여부. 수정가능 (0 || 1)
+    unsigned loop = 1;                                          // 평균 구할 루프 횟수. 수정가능
+    long SIZE = 100000;                                         // 랜덤생성할 배열의 크기(기본권장: 1만~10만, 쉘-크누스쉘 실험시 1000만도 안정적.)
+    int MAX = 10000;                                            // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
+    testWrapper(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), SIZE, MAX); 
+
+    // 고성능 테스트
+    printf("High Perfomance Sort:\n");
+    void (*highPerfomFuncs[])(int*, unsigned) = { shell, knuth_shell, quick };  
+    initSrand = 0;
+    loop = 3;
+    SIZE = 10000000; 
+    MAX = 10000;
     // 검사 실행
-    testWrapper(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), SIZE, MAX);      // 코드 구조를 알기 전 까진 매개변수 수정은 권장하지 않음.
+    testWrapper(initSrand, loop, highPerfomFuncs, sizeof(highPerfomFuncs) / sizeof(highPerfomFuncs[0]), SIZE, MAX);      // 코드 구조를 알기 전 까진 매개변수 수정은 권장하지 않음.
     return 0;
 }
 
 
-// 함수 구현부
 
-void swap(int* a, int* b) {
-    int tmp = *a;
-    *a = *b;
-    *b = tmp;
-}
+// 함수 구현부(정의)
 
+void swap(int* a, int* b) { register int tmp = *a;      *a = *b;        *b = tmp; }
 void printArr(int* arr, unsigned size) {
     printf("{%d", arr[0]);
-    for (unsigned i = 1; i < size; ++i) {
+    for (unsigned i = 1; i < size; ++i)
         printf(", %d", arr[i]);
-    }
     printf("}\n");
 }
-
 
 // 최소값 찾기지만, 큰 값을 찾아 배열 오른쪽으로 밀어냄. (거품이 교차되듯이)
 void bubble(int* arr, unsigned size) {
@@ -113,27 +128,56 @@ void shell(int* arr, unsigned size) {
     }
 }
 
-// shell 정렬의 크누스수열 적용(연속된 값들이 서로의 약수가 되지 않도록 설계되어 최적화)
+// shell 정렬의 단순 비교 정수들 register 적용과 크누스수열 적용(연속된 값들이 서로의 약수가 되지 않도록 설계되어 최적화)
 void knuth_shell(int* arr, unsigned size) {
-    int step = 1;
-    while(step < size / 3) { step = 3 * step + 1; }     // step 초기화
+    register int step = 1;      while(step < size / 3) { step = 3 * step + 1; }     // init step.
+    register int i;
+    register int j;
+    register int buffer;
+
     while (step > 0) { 
-        for (int i = step; i < size; ++i) {
-            int buffer = arr[i];
-            int j = i;
-            for (; j >= step && arr[j - step] > buffer; j -= step) 
+        for (i = step; i < size; ++i) {
+            buffer = arr[i];
+            for (j = i; j >= step && arr[j - step] > buffer; j -= step) 
                 arr[j] = arr[j - step];
             if (j != i) { arr[j] = buffer;}
         }
-        step /= 3;                                      // step 갱신
+        step /= 3;                                      // update step
     }    
-
 }
 
-// 정렬 시간 구하기 테스트
+// quick정렬. pivot을 기준으로 큰 값배열과 작은 값배열을 분할하여 재귀실행
+void quickSort(int* arr, int left, int right) {
+    // register선언된 변수들은 그냥 int로 사용시에도 충분히 quick정렬은 빠르지만, 이조차 압도적으로 빨라졌음.
+    register int pL = left;                          // 0으로 시작
+    register int pR = right;                         // size - 1로 시작
+    register int pivot = arr[(pL + pR) / 2];         // 기준값은 센터값
+    register int tmp;
+    //??? pivot을 중앙값으로 설정하고싶을 때: 좌우 균형을 맞춘 안정성 상승한다지만 속도는 오히려 감소함
+    // register int center = (pL + pR) / 2; register int pivot = arr[pL] < arr[pR] ? (arr[center] < arr[pR]? arr[center]: arr[pR]) : (arr[center] < arr[pL] ? arr[center]: arr[pL]);
+
+    while (pL <= pR) {                      // pL, pR 이 교차될 때 까지 탐색
+        while(pivot > arr[pL]) pL++;        // pL 은 arr[pL] 값이 pivot보다 크면 멈춤
+        while(pivot < arr[pR]) pR--;        // pR 은 arr[pR] 값이 pivot보다 작으면 멈춤
+        if (pL <= pR) {                     // 스왑하고 다음탐색. (다만 위 과정에서 pL과 pR이 바꼈으니 조건을 다시 점검)
+            tmp = arr[pL];                  //??? 이상하게, swap 함수를 inline처리, tmp를 register로 다뤄도 약간밖에 안빨라짐. 내부구현이 훨씬 빠름
+            arr[pL] = arr[pR];
+            arr[pR] = tmp;
+            pL++;
+            pR--;
+        }
+    } 
+
+    if (left < pR) quickSort(arr, left, pR);        // pivot기준 좌측배열 정렬 재귀실행(pR이 pivot쪽으로 왔으므로, right는 pR)
+    if (right > pL) quickSort(arr, pL, right);      // pviot기준 우측배열 정렬 재귀실행(pL이 pivot쪽으로 왔으므로, left는 pL)
+}
+
+
+// 테스트용 코드: 정렬시간 측정후 출력 (함수, 반복횟수, 배열크기, 배열에 들어갈 랜덤 최대값)
 void doTest(void (*func)(int*, unsigned), unsigned loop, long SIZE, int MAX) {
-    int* data = malloc(sizeof(int) * SIZE);
-    double spentTimes[loop];
+    int* data = malloc(sizeof(int) * SIZE);     // 랜덤배열이 저장됨
+    double spentTimes[loop];                    // 소요시간 기록 배열
+    double totalSpent = 0;                      // 최종 누적 시간 기록
 
     for (int i = 0; i < loop; ++i) {
         for (long i = 0; i < SIZE; ++i)      data[i] = rand() % MAX + 1;
@@ -143,13 +187,11 @@ void doTest(void (*func)(int*, unsigned), unsigned loop, long SIZE, int MAX) {
     }
 
     free(data);
-
-    double totalSpent = 0;
     for (int i = 0; i < loop; ++i)          totalSpent += spentTimes[i];
-    printf("average time spent: %.6f s.\n", totalSpent / loop);
+    printf("average time spent: %.6f s.\n", totalSpent / loop);     // 평균 소요시간 출력
 }
 
-// 정렬시간 구하기 테스트의 세팅.       // srand의 시드 제공여부, loop횟수, functions 배열, 배열사이즈 를 매개변수로 받음
+// 정렬시간 구하기 테스트의 세팅 (srand의 시드 제공여부, 반복횟수, 정렬함수포인터 배열, 배열사이즈, doTest에 생성할 *data배열크기, *data배열에 들어갈 랜덤 최대값)
 void testWrapper(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long SIZE, int MAX) {
     if (init_srand)                             (time(NULL));
     for (unsigned i = 0; i < funcsSize; ++i)    doTest(funcs[i], loop, SIZE, MAX);
