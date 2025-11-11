@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 // algs/sort.cpp 를 복습겸 c로 구현. 정수형 배열이며, 전통적 배열을 사용.
 
@@ -65,6 +67,28 @@ void shell(int* arr, unsigned size) {
     }
 }
 
+// 정렬 시간 구하기 테스트
+void doTest(void (*func)(int*, unsigned), int loop) {
+    // 1~100만까지의 수를 랜덤으로 10만개 뽑음
+    int SIZE = 100000;
+    int MAX = 1000000;
+
+    int* data = malloc(sizeof(int) * SIZE);
+    double spentTimes[loop];
+
+    for (int i = 0; i < loop; ++i) {
+        for (int i = 0; i < SIZE; ++i)      data[i] = rand() % MAX + 1;
+        clock_t start = clock();
+        func(data, SIZE);
+        spentTimes[i] = (double)(clock() - start) / CLOCKS_PER_SEC;
+    }
+
+    free(data);
+
+    double totalSpent = 0;
+    for (int i = 0; i < loop; ++i)          totalSpent += spentTimes[i];
+    printf("average time spent: %.6f s.\n", totalSpent / loop);
+}
 
 int main() {
     int arr[10] = { 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 };
@@ -72,5 +96,11 @@ int main() {
     shell(arr, 10);
     printArr(arr, 10);
 
+    // 정렬시간 구하기 테스트함수 사용
+    srand(time(NULL));
+    void (*funcs[])(int*, unsigned) = { bubble, select, insert, shell };        // 추가/삭제 가능. funcSize 는 알아서 추론
+    int funcsSize = sizeof(funcs) / sizeof(funcs[0]);
+    for (int i = 0; i < funcsSize; ++i)                         doTest(funcs[i], 1);
+    
     return 0;
 }

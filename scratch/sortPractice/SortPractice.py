@@ -1,3 +1,6 @@
+import time
+import random
+
 class sort():
     def __init__(self, array):
         self.original = array;
@@ -46,6 +49,17 @@ class sort():
                 i += 1
             gap = int(gap / 2)
 
+    # 모두 테스트
+    def do_test(self):
+        funcs:list = [self.bubble, self.select, self.insert, self.shell]
+        res:list = []
+        for func in funcs:
+            start= time.time()
+            func()
+            end = time.time()
+            res.append(end - start)
+        print(res)
+            
 
 myArray = [ 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 ]
 
@@ -61,3 +75,9 @@ print(testInstance.result)
 
 testInstance.shell()
 print(testInstance.result)
+
+
+# 모두 테스트 하여 시간계산(python은 삽입이 선택보다 느리게 나옴: 코드에 문제는 없지만, python에서 swap"a,b = b,a"보다 옮기는 것"참조재할당"이 비용이 큼.)
+data_list = random.sample(range(1, 100001), 10000)
+time_check = sort(data_list)
+time_check.do_test()
