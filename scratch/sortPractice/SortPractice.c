@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
-// 작성된 정렬: 버블, 선택, 삽입, 쉘, 크누스수열 개선쉘, 퀵
-
+// 작성된 정렬: 버블, 선택, 삽입, 쉘, 크누스수열 개선쉘, 퀵, 머지
 
 // Prototypes:
 // 정렬함수들이 상속하는 swap과 배열출력 편의를 위한 printArr
@@ -23,9 +23,13 @@ void knuth_shell(int* arr, unsigned size);                              // shell
 void quickSort(int* arr, int left, int right);                          // quick 프로토타입
 void quick(int* arr, unsigned size) { quickSort(arr, 0, size - 1); }    // 테스트의 양식에 맞게 사용하기 위한 wrapper함수
 
-// 정렬알고리즘의 소요시간을 검사하기 위한 메소드.
-void doTest(void (*func)(int*, unsigned), unsigned loop, long SIZE, int MAX);
-void testWrapper(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long SIZE, int MAX);
+// merge
+void merge(int* arr, unsigned size);                                    // 개념만 보고 직접 만든거라 스탠다드 코드와 약간 다름.
+
+// for sort time bench marking 
+int* getRandArr(long size, int maxInt);
+void doTest(void (*func)(int*, unsigned), unsigned loop, int* sampleArr, long size);
+void runTests(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long size, int maxInt);
 
 
 
@@ -36,29 +40,25 @@ int main() {
     int arr[] = { 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 };
     int arrSz = sizeof(arr) / sizeof(arr[0]);
     printArr(arr, arrSz);
-    quick(arr, arrSz);         // 정렬함수 변경 가능
+    merge(arr, arrSz);         // 정렬함수 변경 가능
     printArr(arr, arrSz);
-
 
 
     // 성능 테스트
     // 기본정렬 테스트
-    void (*funcs[])(int*, unsigned) = { bubble, select, insert, shell, knuth_shell, quick };   // 정렬 함수 첨삭 가능
+    void (*funcs[])(int*, unsigned) = { bubble, select, insert, shell, knuth_shell, quick, merge };   // 정렬 함수 첨삭 가능
     int initSrand = 1;                                          // rand시드 초기화여부. 수정가능 (0 || 1)
     unsigned loop = 1;                                          // 평균 구할 루프 횟수. 수정가능
-    long SIZE = 100000;                                         // 랜덤생성할 배열의 크기(기본권장: 1만~10만, 쉘-크누스쉘 실험시 1000만도 안정적.)
-    int MAX = 10000;                                            // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
-    testWrapper(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), SIZE, MAX); 
+    long size = 100000;                                         // 랜덤생성할 배열의 크기(기본권장: 1만~10만, 쉘-크누스쉘 실험시 1000만도 안정적.)
+    int maxInt = 10000;                                            // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
+    runTests(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), size, maxInt); 
 
     // 고성능 테스트
     printf("High Perfomance Sort:\n");
-    void (*highPerfomFuncs[])(int*, unsigned) = { shell, knuth_shell, quick };  
-    initSrand = 0;
-    loop = 3;
-    SIZE = 10000000; 
-    MAX = 10000;
-    // 검사 실행
-    testWrapper(initSrand, loop, highPerfomFuncs, sizeof(highPerfomFuncs) / sizeof(highPerfomFuncs[0]), SIZE, MAX);      // 코드 구조를 알기 전 까진 매개변수 수정은 권장하지 않음.
+    void (*highPerfomFuncs[])(int*, unsigned) = { shell, knuth_shell, quick, merge };  
+    unsigned highPerfomFuncsSize = sizeof(highPerfomFuncs) / sizeof(highPerfomFuncs[0]);
+    runTests(0, 3, highPerfomFuncs, highPerfomFuncsSize, 10000000, maxInt);
+
     return 0;
 }
 
@@ -173,26 +173,59 @@ void quickSort(int* arr, int left, int right) {
 }
 
 
-// 테스트용 코드: 정렬시간 측정후 출력 (함수, 반복횟수, 배열크기, 배열에 들어갈 랜덤 최대값)
-void doTest(void (*func)(int*, unsigned), unsigned loop, long SIZE, int MAX) {
-    int* data = malloc(sizeof(int) * SIZE);     // 랜덤배열이 저장됨
+void merge(int* arr, unsigned size) {
+    // 기저조건: 정렬할 것이 없을 때 아무 정렬도 하지 않고 종료
+    if (size <= 1) return;
+    // 분할
+    register unsigned lSize = size / 2;
+    register unsigned rSize = size - lSize;
+    int* lArr = malloc (lSize * sizeof(int));
+    int* rArr = malloc (rSize * sizeof(int));
+    memcpy(lArr, arr, lSize * sizeof(int));
+    memcpy(rArr, arr + lSize, rSize * sizeof(int));
+    // 정복
+    merge(lArr, lSize);
+    merge(rArr, rSize);
+    // 합병
+    register unsigned lIdx = 0, rIdx = 0, aIdx =0;
+    while (lIdx < lSize && rIdx < rSize && aIdx < size) {
+        if (lArr[lIdx] < rArr[rIdx])    arr[aIdx++] = lArr[lIdx++];
+        else arr[aIdx++] = rArr[rIdx++];
+    }
+    // 나머지 발생시 lArr부터 합병
+    while (lIdx < lSize) arr[aIdx++] = lArr[lIdx++];
+    while (rIdx < rSize) arr[aIdx++] = rArr[rIdx++];
+    free(lArr);
+    free(rArr);
+}
+
+
+int* getRandArr(long size, int maxInt) {
+    int* res = malloc(sizeof(int) * size);
+    for (long i = 0; i < size; ++i)         res[i] = rand() % maxInt + 1;
+    return res;
+}
+
+void doTest(void (*func)(int*, unsigned), unsigned loop, int* sampleArr, long size) {
+    int* sample = malloc(sizeof(int) * size);   // 샘플복사
     double spentTimes[loop];                    // 소요시간 기록 배열
     double totalSpent = 0;                      // 최종 누적 시간 기록
 
     for (int i = 0; i < loop; ++i) {
-        for (long i = 0; i < SIZE; ++i)      data[i] = rand() % MAX + 1;
+        memcpy(sample, sampleArr, size * sizeof(int));        // 샘플 초기화
         clock_t start = clock();
-        func(data, SIZE);
+        func(sample, size);
         spentTimes[i] = (double)(clock() - start) / CLOCKS_PER_SEC;
     }
 
-    free(data);
     for (int i = 0; i < loop; ++i)          totalSpent += spentTimes[i];
     printf("average time spent: %.6f s.\n", totalSpent / loop);     // 평균 소요시간 출력
+    free(sample);
 }
 
-// 정렬시간 구하기 테스트의 세팅 (srand의 시드 제공여부, 반복횟수, 정렬함수포인터 배열, 배열사이즈, doTest에 생성할 *data배열크기, *data배열에 들어갈 랜덤 최대값)
-void testWrapper(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long SIZE, int MAX) {
+void runTests(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long size, int maxInt) {
+    int* sampleArr = getRandArr(size, maxInt);
     if (init_srand)                             (time(NULL));
-    for (unsigned i = 0; i < funcsSize; ++i)    doTest(funcs[i], loop, SIZE, MAX);
+    for (unsigned i = 0; i < funcsSize; ++i)    doTest(funcs[i], loop, sampleArr, size);
+    free(sampleArr);
 }
