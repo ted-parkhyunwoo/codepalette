@@ -9,29 +9,22 @@
 // 정렬함수들이 상속하는 swap과 배열출력 편의를 위한 printArr
 inline void swap(int* a, int* b);
 void printArr(int* arr, unsigned size);
-
-// 기초적인 정렬
+// basic sort
 void bubble(int* arr, unsigned size);
 void select(int* arr, unsigned size);
 void insert(int* arr, unsigned size);
-
 // shell sort
 void shell(int* arr, unsigned size);
-void knuth_shell(int* arr, unsigned size);                              // shell정렬에 크누스 수열 적용되며, 변동과 검사가 잦은 값 register int 사용
-
+void knuth_shell(int* arr, unsigned size);
 // quick sort
 void quickSort(int* arr, int left, int right);                          // quick 프로토타입
 void quick(int* arr, unsigned size) { quickSort(arr, 0, size - 1); }    // 테스트의 양식에 맞게 사용하기 위한 wrapper함수
-
 // merge
 void merge(int* arr, unsigned size);                                    // 개념만 보고 직접 만든거라 스탠다드 코드와 약간 다름.
-
 // for sort time bench marking 
 int* getRandArr(long size, int maxInt);
 void doTest(void (*func)(int*, unsigned), unsigned loop, int* sampleArr, long size);
 void runTests(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long size, int maxInt);
-
-
 
 
 // 메인함수
@@ -39,23 +32,30 @@ int main() {
     // 기본테스트
     int arr[] = { 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 };
     int arrSz = sizeof(arr) / sizeof(arr[0]);
-    printArr(arr, arrSz);
     merge(arr, arrSz);         // 정렬함수 변경 가능
     printArr(arr, arrSz);
 
 
     // 성능 테스트
     // 기본정렬 테스트
-    void (*funcs[])(int*, unsigned) = { bubble, select, insert, shell, knuth_shell, quick, merge };   // 정렬 함수 첨삭 가능
-    int initSrand = 1;                                          // rand시드 초기화여부. 수정가능 (0 || 1)
-    unsigned loop = 1;                                          // 평균 구할 루프 횟수. 수정가능
-    long size = 100000;                                         // 랜덤생성할 배열의 크기(기본권장: 1만~10만, 쉘-크누스쉘 실험시 1000만도 안정적.)
-    int maxInt = 10000;                                            // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
+    printf("\nNormal Sort Test:\n");
+    void (*funcs[])(int*, unsigned) = { 
+        bubble, select, insert, shell, knuth_shell, merge, quick
+    };
+
+    int initSrand = 1;          // rand시드 초기화여부. 수정가능 (0 || 1)
+    unsigned loop = 1;          // 평균 구할 루프 횟수. 수정가능
+    long size = 100000;         // 랜덤생성할 배열의 크기(기본권장: 1만~10만, 쉘-크누스쉘 실험시 1000만도 안정적.)
+    int maxInt = 10000;         // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
     runTests(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), size, maxInt); 
 
+
     // 고성능 테스트
-    printf("High Perfomance Sort:\n");
-    void (*highPerfomFuncs[])(int*, unsigned) = { shell, knuth_shell, quick, merge };  
+    printf("\nHigh Perfomance Sort Test:\n");
+    void (*highPerfomFuncs[])(int*, unsigned) = { 
+        shell, knuth_shell, merge, quick
+    };
+
     unsigned highPerfomFuncsSize = sizeof(highPerfomFuncs) / sizeof(highPerfomFuncs[0]);
     runTests(0, 3, highPerfomFuncs, highPerfomFuncsSize, 10000000, maxInt);
 
@@ -64,8 +64,11 @@ int main() {
 
 
 
-// 함수 구현부(정의)
 
+
+
+
+// 함수 구현부(정의)
 void swap(int* a, int* b) { register int tmp = *a;      *a = *b;        *b = tmp; }
 void printArr(int* arr, unsigned size) {
     printf("{%d", arr[0]);
@@ -201,13 +204,13 @@ void merge(int* arr, unsigned size) {
 
 
 int* getRandArr(long size, int maxInt) {
-    int* res = malloc(sizeof(int) * size);
+    int* res = malloc(sizeof(int) * size);      // getRandArr메서드 사용시에는 메모리 해제를 잊지 않도록.
     for (long i = 0; i < size; ++i)         res[i] = rand() % maxInt + 1;
     return res;
 }
 
 void doTest(void (*func)(int*, unsigned), unsigned loop, int* sampleArr, long size) {
-    int* sample = malloc(sizeof(int) * size);   // 샘플복사
+    int* sample = malloc(sizeof(int) * size);   // 샘플 복사될 메모리 할당
     double spentTimes[loop];                    // 소요시간 기록 배열
     double totalSpent = 0;                      // 최종 누적 시간 기록
 
@@ -215,17 +218,17 @@ void doTest(void (*func)(int*, unsigned), unsigned loop, int* sampleArr, long si
         memcpy(sample, sampleArr, size * sizeof(int));        // 샘플 초기화
         clock_t start = clock();
         func(sample, size);
-        spentTimes[i] = (double)(clock() - start) / CLOCKS_PER_SEC;
+        spentTimes[i] = (double)(clock() - start) / CLOCKS_PER_SEC;     // 시간 기록
     }
-
+    // 시간 평균 산출 및 출력
     for (int i = 0; i < loop; ++i)          totalSpent += spentTimes[i];
-    printf("average time spent: %.6f s.\n", totalSpent / loop);     // 평균 소요시간 출력
+    printf("average time spent: %.6f s.\n", totalSpent / loop);
     free(sample);
 }
 
 void runTests(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long size, int maxInt) {
-    int* sampleArr = getRandArr(size, maxInt);
-    if (init_srand)                             (time(NULL));
-    for (unsigned i = 0; i < funcsSize; ++i)    doTest(funcs[i], loop, sampleArr, size);
+    int* sampleArr = getRandArr(size, maxInt);                              // 샘플 생성
+    if (init_srand)                             srand(time(NULL));          // 랜덤시드주입
+    for (unsigned i = 0; i < funcsSize; ++i)    doTest(funcs[i], loop, sampleArr, size);    // 각 테스트 실행
     free(sampleArr);
 }
