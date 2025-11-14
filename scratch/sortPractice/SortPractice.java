@@ -1,4 +1,7 @@
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Random;
+import java.util.function.BiConsumer;
 
 class SortPractice {
 
@@ -141,12 +144,6 @@ class SortPractice {
 
 
     // init sample arraylist helper.
-    public static void init(ArrayList<Integer> arr) {
-        arr.clear();
-        int[] sample = {5,2,9,3,1,4,8,0,6,7};
-        for (int i = 0; i < sample.length; ++i)
-            arr.add((Integer)sample[i]);
-    }
     public static void initStrList(ArrayList<String> arr) {
         arr.clear();
         String[] strarr = {"c", "b", "A", "3", "5", "ab", "abc", "Ca", "aB", "Ab"};
@@ -154,22 +151,43 @@ class SortPractice {
             arr.add((String)strarr[i]);
     }
 
+    public static ArrayList<Integer> getRandArr(int size, int max) {
+        Random random = new Random();
+        ArrayList<Integer> res = new ArrayList<>();
+        for (int i = 0; i < size; ++i) {
+            res.add(random.nextInt(max));
+        }
+        return res;
+    }
 
+    public static void doTest(ArrayList<Integer> rand, BiConsumer<ArrayList<Integer>, Boolean> algorithm, String funcName) {
+        
+        boolean ascending = false;
+        ArrayList<Integer> copy = new ArrayList<>(rand);
+        long start = System.currentTimeMillis();
+        algorithm.accept(copy, ascending);
+        long end = System.currentTimeMillis();
+
+        System.out.println((end - start) + "ms (" + ((end - start)/ 1000.0) + "s),  sort: " + funcName + ", sample size: " + (copy.size()));
+    }
 
     public static void main(String[] args) {
-        ArrayList<Integer> test = new ArrayList<>();
-        boolean ascending = false;
-        init(test); bubble(test, ascending); print(test);
-        init(test); select(test, ascending); print(test);
-        init(test); insert(test, ascending); print(test);
-        init(test); shell(test, ascending); print(test);
-        init(test); quick(test, ascending); print(test);
-        init(test); merge(test, ascending); print(test);
-        
-        ArrayList<String> strTest = new ArrayList<>();
-        initStrList(strTest);
-        merge(strTest, true);
-        print(strTest);
-        
+        ArrayList<Integer> rand;
+
+        System.out.println("Normal Sort:");
+        rand = getRandArr(100000, 10000);
+        doTest(rand, SortPractice::bubble, "bubble");
+        doTest(rand, SortPractice::select, "select");
+        doTest(rand, SortPractice::insert, "insert");
+        doTest(rand, SortPractice::shell, "shell");
+        doTest(rand, SortPractice::merge, "merge");
+        doTest(rand, SortPractice::quick, "quick");        
+
+        System.out.println("\nHigh Perfomance Sort:");
+        rand = getRandArr(10000000, 10000);
+        doTest(rand, SortPractice::shell, "shell");
+        doTest(rand, SortPractice::merge, "merge");
+        doTest(rand, SortPractice::quick, "quick");
     }
+
 }
