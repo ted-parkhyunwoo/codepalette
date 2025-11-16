@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <stdbool.h>
 
 // Prototypes:
 
@@ -15,9 +16,17 @@ void select(int* arr, unsigned size);
 void insert(int* arr, unsigned size);
 void shell(int* arr, unsigned size);
 void knuth_shell(int* arr, unsigned size);
-void quickSort(int* arr, int left, int right);                          // quick 프로토타입
-void quick(int* arr, unsigned size) { quickSort(arr, 0, size - 1); }    // 테스트의 양식(매개변수 스타일)에 맞게 사용하기 위한 wrapper함수
 void merge(int* arr, unsigned size);                                    // 개념만 보고 직접 만든거라 스탠다드 코드와 약간 다름.
+
+void _quick(int* arr, int left, int right);                             // quick core
+void quick(int* arr, unsigned size) { _quick(arr, 0, size - 1); }       // 테스트의 양식(매개변수 스타일)에 맞게 사용하기 위한 wrapper함수
+
+void _quickNoReg(int* arr, int left, int right);                        // quick 과 동일한구조. 변수가 일반 변수로 register로 선언되지 않음.
+void quickNoReg(int* arr, unsigned size) { _quickNoReg(arr, 0, size - 1); }
+
+void _quickPtr(int* start, int* end);                                   // quickPtr core: 포인터 버전
+void quickPtr(int* arr, unsigned size) { _quickPtr(arr, arr + size - 1); }
+
 
 // for sort time bench marking 
 int* getRandArr(long size, int maxInt);
@@ -27,36 +36,100 @@ void runTests(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), un
 
 // 메인함수
 int main() {
-    // 기본테스트
-    int arr[] = { 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 };
-    int arrSz = sizeof(arr) / sizeof(arr[0]);
-    merge(arr, arrSz);         // 정렬함수 변경 가능
-    printArr(arr, arrSz);
 
-
-    // 성능 테스트
-    // 기본정렬 테스트
-    printf("\nNormal Sort Test:\n");
-    void (*funcs[])(int*, unsigned) = { 
-        bubble, select, insert, shell, knuth_shell, merge, quick
+    // 다음 test 배열의 boolean 값에 따라 검사를 진행하고 return 0.
+    bool test[] = {
+        false, false, true, false     // 기본테스트(출력), 무작위배열테스트(출력), 두 정렬로 정렬검증, 벤치마크테스트
     };
 
-    int initSrand = 1;          // rand시드 초기화여부. 수정가능 (0 || 1)
-    unsigned loop = 1;          // 평균 구할 루프 횟수. 수정가능
-    long size = 100000;         // 랜덤생성할 배열의 크기(기본권장: 1만~10만, 쉘-크누스쉘 실험시 1000만도 안정적.)
-    int maxInt = 10000;         // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
-    runTests(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), size, maxInt); 
+    srand(__builtin_ia32_rdtsc());          // 매 실행마다 다름을 보장하기 위한것이지, 보안적인 랜덤시드는 아님
+
+    // 1. 기본테스트: arr를 정렬하여 출력
+    if (test[0]) 
+    {
+        void (*func)(int*, unsigned) = quick;           // 정렬 선택. 변경가능
+        int arr[] = { 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 };   // 정렬 배열. 변경가능
+
+        int arrSz = sizeof(arr) / sizeof(arr[0]);
+        func(arr, arrSz);
+        printArr(arr, arrSz);
+    }
 
 
-    // 고성능 테스트
-    printf("\nHigh Perfomance Sort Test:\n");
-    void (*highPerfomFuncs[])(int*, unsigned) = { 
-        shell, knuth_shell, merge, quick
-    };
+    // 2. 무작위배열 테스트: 무작위 배열을 생성하고 정렬하여 출력
+    if (test[1]) 
+    {
+        void (*func)(int*, unsigned) = quickPtr;        // 정렬 방법. 변경 가능
+        int randomLoop = 3;                             // 샘플 갯수. 변경 가능
+        int sampleSize = 20;                            // 샘플 길이. 변경 가능
+        int max = 100;                                  // 샘플 요소 최대값. 변경 가능
 
-    unsigned highPerfomFuncsSize = sizeof(highPerfomFuncs) / sizeof(highPerfomFuncs[0]);
-    runTests(0, 3, highPerfomFuncs, highPerfomFuncsSize, 10000000, maxInt);
+        int* sample = NULL;
+        for (int i = 0; i < randomLoop; ++i) {
+            sample = getRandArr(sampleSize, max);
+            func(sample, sampleSize);
+            printArr(sample, sampleSize);
+            free(sample);
+        }
+    }
 
+
+    // 3. f1정렬, f2정럴 결과가 같음을 검증
+    if (test[2]) 
+    {
+        void (*f1)(int*, unsigned) = quick;             // 첫번째 정렬 방법. 변경 가능
+        void (*f2)(int*, unsigned) = quickPtr;          // 두번째 정렬 방법. 변경 가능
+        int testLoop = 5;                               // 검증횟수. 변경 가능
+        int sz = 100000000;                             // 샘플 길이. 변경 가능
+        int max = 10000;                                // 샘플 요소 최대값. 변경 가능
+
+        while(testLoop > 0) {
+            int* checkSample = getRandArr(sz, max);
+            int* copySample = malloc(sz * sizeof(int));     memcpy(copySample, checkSample, sz * sizeof(int));
+            clock_t f1_start = clock();
+            f1(checkSample, sz);
+            double f1_res = (double)(clock() - f1_start) / CLOCKS_PER_SEC;
+            clock_t f2_start = clock();
+            f2(copySample, sz);
+            double f2_res = (double)(clock() - f2_start) / CLOCKS_PER_SEC;
+            for (int i = 0; i < sz; ++i) {
+                if (checkSample[i] != copySample[i]) {
+                    printf("검증실패: %d != %d\n", checkSample[i], copySample[i]);
+                    break;
+                }
+            }
+            printf("검증성공. 정렬소요시간: f1: %f s\t f2: %f s\n", f1_res, f2_res);
+            free(checkSample);
+            free(copySample);
+            testLoop--;
+        }
+    }
+
+
+    // 4. 성능 테스트
+    if (test[3]) {
+        // 기본정렬 테스트
+        printf("\nNormal Sort Test:\n");
+        void (*funcs[])(int*, unsigned) = { 
+            bubble, select, insert, shell, knuth_shell, merge, quick, quickPtr      // 정렬방법. 추가/삭제 가능
+        };
+
+        int initSrand = 0;          // rand시드 초기화여부. 수정가능 (0 || 1)
+        unsigned loop = 1;          // 평균 구할 루프 횟수. 수정가능
+        long size = 100000;         // 랜덤생성할 배열의 크기
+        int maxInt = 10000;         // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
+        runTests(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), size, maxInt); 
+
+
+        // 고성능 테스트 : 천만개 요쇼 배열 검사
+        printf("\nHigh Perfomance Sort Test:\n");
+        void (*highPerfomFuncs[])(int*, unsigned) = { 
+            shell, knuth_shell, merge, quick, quickPtr                              // 정렬방법. 추가/삭제 가능 (bubble, select, insert는 굉장히 느림)
+        };
+
+        unsigned highPerfomFuncsSize = sizeof(highPerfomFuncs) / sizeof(highPerfomFuncs[0]);
+        runTests(0, 3, highPerfomFuncs, highPerfomFuncsSize, 10000000, maxInt);
+    }
     return 0;
 }
 
@@ -147,7 +220,7 @@ void knuth_shell(int* arr, unsigned size) {
 }
 
 // quick정렬. pivot을 기준으로 큰 값배열과 작은 값배열을 분할하여 재귀실행
-void quickSort(int* arr, int left, int right) {
+void _quick(int* arr, int left, int right) {
     // register선언된 변수들은 그냥 int로 사용시에도 충분히 quick정렬은 빠르지만, 이조차 압도적으로 빨라졌음.
     register int pL = left;                          // 0으로 시작
     register int pR = right;                         // size - 1로 시작
@@ -155,7 +228,6 @@ void quickSort(int* arr, int left, int right) {
     register int tmp;
     //??? pivot을 중앙값으로 설정하고싶을 때: 좌우 균형을 맞춘 안정성 상승한다지만 속도는 오히려 감소함
     // register int center = (pL + pR) / 2; register int pivot = arr[pL] < arr[pR] ? (arr[center] < arr[pR]? arr[center]: arr[pR]) : (arr[center] < arr[pL] ? arr[center]: arr[pL]);
-
     while (pL <= pR) {                      // pL, pR 이 교차될 때 까지 탐색
         while(pivot > arr[pL]) pL++;        // pL 은 arr[pL] 값이 pivot보다 크면 멈춤
         while(pivot < arr[pR]) pR--;        // pR 은 arr[pR] 값이 pivot보다 작으면 멈춤
@@ -167,9 +239,48 @@ void quickSort(int* arr, int left, int right) {
             pR--;
         }
     } 
+    if (left < pR) _quick(arr, left, pR);       // pivot기준 좌측배열 정렬 재귀실행(pR이 pivot쪽으로 왔으므로, right는 pR)
+    if (right > pL) _quick(arr, pL, right);     // pviot기준 우측배열 정렬 재귀실행(pL이 pivot쪽으로 왔으므로, left는 pL)
+}
 
-    if (left < pR) quickSort(arr, left, pR);        // pivot기준 좌측배열 정렬 재귀실행(pR이 pivot쪽으로 왔으므로, right는 pR)
-    if (right > pL) quickSort(arr, pL, right);      // pviot기준 우측배열 정렬 재귀실행(pL이 pivot쪽으로 왔으므로, left는 pL)
+void _quickNoReg(int* arr, int left, int right) {
+    int pL = left;
+    int pR = right;
+    int pivot = arr[(pL + pR) / 2];
+    int tmp;
+    while (pL <= pR) {
+        while(pivot > arr[pL]) pL++;
+        while(pivot < arr[pR]) pR--;
+        if (pL <= pR) {
+            tmp = arr[pL];
+            arr[pL] = arr[pR];
+            arr[pR] = tmp;
+            pL++;
+            pR--;
+        }
+    } 
+    if (left < pR)  _quickNoReg(arr, left, pR);
+    if (right > pL) _quickNoReg(arr, pL, right);
+}
+
+void _quickPtr(int* start, int* end) {
+    register int* lPtr = start;
+    register int* rPtr = end;
+    register int pivot = *(start + ((end - start) / 2));
+    register int tmp;
+    while (lPtr <= rPtr) {
+        while (pivot > *lPtr)  lPtr++;
+        while (pivot < *rPtr)  rPtr--;
+        if (lPtr <= rPtr) {
+            tmp = *lPtr;
+            *lPtr = *rPtr;
+            *rPtr = tmp;
+            lPtr++;
+            rPtr--;
+        }
+    }
+    if (rPtr > start)   _quickPtr(start, rPtr);
+    if (lPtr < end)     _quickPtr(lPtr, end);
 }
 
 
