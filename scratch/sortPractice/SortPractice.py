@@ -1,83 +1,176 @@
-import time
 import random
+import time
 
-class sort():
-    def __init__(self, array):
-        self.original = array;
-        self.SIZE = len(self.original)
-        self.result = []
-    
-    def clearResult(self):
-        self.__init__(self.original)
 
-    def bubble(self):
-        self.result = list(self.original)
-        for i in range(self.SIZE - 1):
-            for j in range(self.SIZE - i - 1):
-                if self.result[j] > self.result[j + 1]:     self.result[j], self.result[j + 1] = self.result[j + 1], self.result[j] 
 
-    def select(self):
-        self.result = list(self.original)
-        for i in range(self.SIZE):
-            minIdx:int = i
-            for j in range(i, self.SIZE):
-                if self.result[j] < self.result[minIdx]:        minIdx = j
-            if minIdx != i:     self.result[i], self.result[minIdx] = self.result[minIdx], self.result[i]
+def sort_bubble(l:list, ascending:bool) -> None:
+    sz:int = len(l);
+    for i in range(0, sz - 1):
+        for j in range(0, sz - i - 1):
+            cond:bool = l[j] > l[j + 1] if ascending else l[j] < l[j + 1]
+            if cond:
+                l[j], l[j + 1] = l[j + 1], l[j]
 
-    def insert(self):
-        self.result = list(self.original)
-        for i in range(1, self.SIZE):
-            buffer = self.result[i]
+def sort_select(l:list, ascending:bool) -> None:
+    sz:int = len(l)
+    for i in range(0, sz):
+        minIdx:int = i
+        for j in range(i, sz):
+            cond:bool = l[minIdx] > l[j] if ascending else l[minIdx] < l[j]
+            if cond:
+                l[minIdx], l[j] = l[j], l[minIdx]
+
+def sort_insert(l:list, ascending:bool) -> None:
+    sz:int = len(l)
+    for i in range(1, sz):
+
+        bf:int = l[i]
+        j:int = i
+
+        ## for문버전은 j = k - 1이 관건. c처럼 for문 내 조건(j혹은 k가 증감 하기 전 평가)이 range로 뿌리는거랑 다르다는 점을 인지.
+        # for k in range(i, 0, -1):
+        #     cond:bool = l[k - 1] > bf if ascending else l[k - 1] < bf
+        #     if cond:
+        #         l[k] = l[k - 1]
+        #         j = k - 1
+        #     else: break
+        # if j != i:
+        #     l[j] = bf
+
+        while j > 0 and (l[j - 1] > bf if ascending else l[j - 1] < bf):
+            l[j] = l[j - 1]
+            j -= 1
+        if j != i:
+            l[j] = bf
+
+
+def sort_shell(l:list, ascending:bool) -> None:
+    sz:int = len(l)
+    gap:int = 1
+    while (gap < sz / 3):
+        gap = gap * 3 + 1
+    while(gap > 0):
+        sz:int = len(l)
+        for i in range(gap, sz):
+
+            bf:int = l[i]
             j:int = i
-            while j > 0 and self.result[j - 1] > buffer:
-                self.result[j] = self.result[j - 1];
-                j -= 1
-            if j != i:          self.result[j] = buffer;
 
-    def shell(self):
-        self.result = list(self.original)
-        gap:int = int(self.SIZE / 2)
-        while (gap > 0) :
-            i:int = gap
-            while i < self.SIZE:
-                buffer = self.result[i]
-                j:int = i
-                while j >= gap and self.result[j - gap] > buffer:
-                    self.result[j] = self.result[j - gap]
-                    j -= gap
-                if j != i:      self.result[j] = buffer
-                i += 1
-            gap = int(gap / 2)
+            while j >= gap and (l[j - gap] > bf if ascending else l[j - gap] < bf):
+                l[j] = l[j - gap]
+                j -= gap
+            if j != i:
+                l[j] = bf
+        gap = int(gap / 3)
 
-    # 모두 테스트
-    def do_test(self):
-        funcs:list = [self.bubble, self.select, self.insert, self.shell]
-        res:list = []
-        for func in funcs:
-            start= time.time()
-            func()
-            end = time.time()
-            res.append(end - start)
-        print(res)
-            
+def _quick(l:list, start:int, end:int, ascending:bool) -> None:
+    if (len(l) <= 1): return
+    if start >= end: return
+    left:int = start
+    right:int = end
+    pivot = l[start + int((end - start ) / 2)]
 
-myArray = [ 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 ]
+    while left <= right:
+        while pivot > l[left] if ascending else pivot < l[left]: left += 1
+        while pivot < l[right] if ascending else pivot > l[right]: right -= 1
+        if (left <= right):
+            l[left], l[right] = l[right], l[left]
+            left += 1
+            right -= 1
 
-testInstance = sort(myArray)
-testInstance.bubble()
-print(testInstance.result)
+    if (start < right): _quick(l, start, right, ascending)
+    if (end > left):    _quick(l, left, end, ascending)
 
-testInstance.select()
-print(testInstance.result)
-
-testInstance.insert()
-print(testInstance.result)
-
-testInstance.shell()
-print(testInstance.result)
+def sort_quick(l:list, ascending:bool) -> None:
+    _quick(l, 0, len(l) - 1, ascending)
 
 
-# 모두 테스트 하여 시간계산(python은 삽입이 선택보다 느리게 나옴: 코드에 문제는 없지만, python에서 swap"a,b = b,a"보다 옮기는 것"참조재할당"이 비용이 큼.)
-data_list = random.sample(range(1, 100001), 10000)
-time_check = sort(data_list)
-time_check.do_test()
+def _merge():
+    pass
+
+# TODO 병합정렬작성
+def sort_merge(l:list, ascending:bool) -> None:
+    pass
+
+
+# 랜덤배열 생성
+def get_random_int_list(size:int, max:int) -> list[int]:
+    res = []
+    for i in range(size):
+        res.append(random.randint(1, max))
+    return res
+
+# sort1과 sort2의 정렬시간 비교
+def time_check_compare(sort1, sort2, size:int, max:int, loop:int,  printTask:bool = False) -> None:
+    f1_sum = 0
+    f2_sum = 0
+    for _ in range(loop):
+        arr:list = get_random_int_list(size, max)
+        arr_cp: list = list(arr)
+        
+        f1_start = time.perf_counter()
+        sort1(arr, True)
+        f1_res = time.perf_counter() - f1_start
+
+        arr_cp = list(arr)
+        f2_start = time.perf_counter()
+        sort2(arr_cp, True)
+        # arr_cp.sort()     # 내장 기본 정렬 사용시 sort2주석처리 후 사용 : C 보다 빠름
+        f2_res = time.perf_counter() - f2_start
+        f1_sum += f1_res
+        f2_sum += f2_res
+        if (not printTask): print(f"loop {_ + 1}...")
+        if (printTask): print("sort1: " + str(f1_res) + "  sort2: " +  str(f2_res))
+
+    print(f"average sort1: {f1_sum / loop}  sort2: {f2_sum / loop}")
+
+# 정렬됐는지 검사
+def is_sorted(l:list, original:list, ascending:bool) -> bool:
+    origin:list = list(original)
+    if ascending: origin.sort()
+    else: origin.sort(reverse= True)
+    return l == origin
+
+# 정렬됐는지 검사하고 출력
+def printSortCorrectly(func, size:int = 10000):
+    max:int = 1000
+
+    arr:list = get_random_int_list(size, max)
+    arr_cp:list = list(arr)
+    asc: bool = True
+    start = time.perf_counter()
+    func(arr_cp, asc)
+    restime = time.perf_counter() - start
+    res = (is_sorted(arr_cp, arr, asc))
+    print(f"{'오름차순' if asc else '내림차순'}: {'성공!' if res else '실패'} 소요시간: {restime}")    
+
+    arr:list = get_random_int_list(size, max)
+    arr_cp:list = list(arr)
+    asc: bool = False
+    start = time.perf_counter()
+    func(arr_cp, asc)
+    restime = time.perf_counter() - start
+    res = (is_sorted(arr_cp, arr, asc))
+    print(f"{'오름차순' if asc else '내림차순'}: {'성공!' if res else '실패'} 소요시간: {restime}")    
+
+
+def main() :    
+    # 정렬검증
+    sort_list:list = [sort_bubble, sort_select, sort_insert, sort_shell, sort_quick]
+    sort_name:list = ["bubble", "select", "insert", "shell", "quick"]
+    for i in range(len(sort_list)):
+        print(sort_name[i])
+        printSortCorrectly(sort_list[i], 1000)
+
+
+    # 소요시간 비교.
+    sort1 = sort_quick
+    sort2 = sort_shell
+    time_check_compare(sort1, sort2, 1000000, 10000, 3)
+
+
+    return 0;
+
+
+if __name__ == "__main__" :
+    main()
