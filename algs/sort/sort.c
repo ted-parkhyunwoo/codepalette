@@ -12,7 +12,7 @@ void printArr(int* arr, unsigned size);
 
 // sort
 void bubble(int* arr, unsigned size);
-void select(int* arr, unsigned size);
+void selection(int* arr, unsigned size);
 void insert(int* arr, unsigned size);
 void shell(int* arr, unsigned size);
 void knuth_shell(int* arr, unsigned size);
@@ -28,7 +28,7 @@ void _quickPtr(int* start, int* end);                                   // quick
 void quickPtr(int* arr, unsigned size) { _quickPtr(arr, arr + size - 1); }
 
 
-// for sort time bench marking 
+// for sort time bench marking
 int* getRandArr(long size, int maxInt);
 void doTest(void (*func)(int*, unsigned), unsigned loop, int* sampleArr, long size);
 void runTests(int init_srand, unsigned loop, void (*funcs[])(int*, unsigned), unsigned funcsSize, long size, int maxInt);
@@ -45,7 +45,7 @@ int main() {
     srand(__builtin_ia32_rdtsc());          // 매 실행마다 다름을 보장하기 위한것이지, 보안적인 랜덤시드는 아님
 
     // 1. 기본테스트: arr를 정렬하여 출력
-    if (test[0]) 
+    if (test[0])
     {
         void (*func)(int*, unsigned) = quick;           // 정렬 선택. 변경가능
         int arr[] = { 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 };   // 정렬 배열. 변경가능
@@ -57,7 +57,7 @@ int main() {
 
 
     // 2. 무작위배열 테스트: 무작위 배열을 생성하고 정렬하여 출력
-    if (test[1]) 
+    if (test[1])
     {
         void (*func)(int*, unsigned) = quickPtr;        // 정렬 방법. 변경 가능
         int randomLoop = 3;                             // 샘플 갯수. 변경 가능
@@ -75,7 +75,7 @@ int main() {
 
 
     // 3. f1정렬, f2정럴 결과가 같음을 검증
-    if (test[2]) 
+    if (test[2])
     {
         void (*f1)(int*, unsigned) = quick;             // 첫번째 정렬 방법. 변경 가능
         void (*f2)(int*, unsigned) = quickPtr;          // 두번째 정렬 방법. 변경 가능
@@ -110,21 +110,21 @@ int main() {
     if (test[3]) {
         // 기본정렬 테스트
         printf("\nNormal Sort Test:\n");
-        void (*funcs[])(int*, unsigned) = { 
-            bubble, select, insert, shell, knuth_shell, merge, quick, quickPtr      // 정렬방법. 추가/삭제 가능
+        void (*funcs[])(int*, unsigned) = {
+            bubble, selection, insert, shell, knuth_shell, merge, quick, quickPtr      // 정렬방법. 추가/삭제 가능
         };
 
         int initSrand = 0;          // rand시드 초기화여부. 수정가능 (0 || 1)
         unsigned loop = 1;          // 평균 구할 루프 횟수. 수정가능
         long size = 100000;         // 랜덤생성할 배열의 크기
         int maxInt = 10000;         // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
-        runTests(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), size, maxInt); 
+        runTests(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), size, maxInt);
 
 
         // 고성능 테스트 : 천만개 요쇼 배열 검사
         printf("\nHigh Perfomance Sort Test:\n");
-        void (*highPerfomFuncs[])(int*, unsigned) = { 
-            shell, knuth_shell, merge, quick, quickPtr                              // 정렬방법. 추가/삭제 가능 (bubble, select, insert는 굉장히 느림)
+        void (*highPerfomFuncs[])(int*, unsigned) = {
+            shell, knuth_shell, merge, quick, quickPtr                              // 정렬방법. 추가/삭제 가능 (bubble, selection, insert는 굉장히 느림)
         };
 
         unsigned highPerfomFuncsSize = sizeof(highPerfomFuncs) / sizeof(highPerfomFuncs[0]);
@@ -161,7 +161,7 @@ void bubble(int* arr, unsigned size) {
 }
 
 // 0번 인덱스부터 최소값을 찾고(선택), 있다면 0번과 스왑. 바뀐건 다음 루프에서 처리
-void select(int* arr, unsigned size) {
+void selection(int* arr, unsigned size) {
     for (int i = 0; i < size; ++i) {
         int minIdx = i;                 // 인덱스로 저장하며 업데이트 후 , 최소값의 인덱스를 찾아 i와 minIdx를 스왑
         for (int j = i; j < size; ++j) {
