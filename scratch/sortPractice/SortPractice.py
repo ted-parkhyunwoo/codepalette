@@ -1,7 +1,7 @@
 import random
 import time
 
-
+# 정렬함수
 
 def sort_bubble(l:list, ascending:bool) -> None:
     sz:int = len(l);
@@ -66,6 +66,7 @@ def sort_shell(l:list, ascending:bool) -> None:
 def _quick(l:list, start:int, end:int, ascending:bool) -> None:
     if (len(l) <= 1): return
     if start >= end: return
+    # 분할
     left:int = start
     right:int = end
     pivot = l[start + int((end - start ) / 2)]
@@ -77,7 +78,7 @@ def _quick(l:list, start:int, end:int, ascending:bool) -> None:
             l[left], l[right] = l[right], l[left]
             left += 1
             right -= 1
-
+    # 정복
     if (start < right): _quick(l, start, right, ascending)
     if (end > left):    _quick(l, left, end, ascending)
 
@@ -85,14 +86,44 @@ def sort_quick(l:list, ascending:bool) -> None:
     _quick(l, 0, len(l) - 1, ascending)
 
 
-def _merge():
-    pass
+def sort_merge(l:list, ascending:bool = True) -> None:
+    # 분할
+    a_size:int = len(l)
+    if (a_size <= 1): return
+    left_size:int = int(a_size / 2)
+    right_size:int = a_size - left_size
+    left_list:list = l[:left_size]
+    right_list:list = l[left_size:]
 
-# TODO 병합정렬작성
-def sort_merge(l:list, ascending:bool) -> None:
-    pass
+    # 정복
+    sort_merge(left_list, ascending)
+    sort_merge(right_list, ascending)
+
+    # 합병(하면서 정렬)
+    idx_buffer_dict = {"left": 0, "right": 0, "result" : 0}
+    def _merge(type:str):
+        if type == "left":
+            l[idx_buffer_dict["result"]] = left_list[idx_buffer_dict["left"]] 
+            idx_buffer_dict["left"] += 1 
+        elif type == "right":                           
+            l[idx_buffer_dict["result"]] = right_list[idx_buffer_dict["right"]]
+            idx_buffer_dict["right"] += 1
+        else: return
+        idx_buffer_dict["result"] += 1
+
+    while (idx_buffer_dict["left"] < left_size) and (idx_buffer_dict["right"] < right_size):
+        cond:bool = left_list[idx_buffer_dict["left"]] > right_list[idx_buffer_dict["right"]]
+        if ascending: cond = not cond
+        if (cond):                      _merge("left")
+        else:                           _merge("right")
+
+    # 찌꺼기 처리 (위 루프에서 둘다 끝날 수도 있지만, 남더라도 한쪽만 남았으므로(이전 정복:재귀 에서 정렬됨) 나머진 자동 채워넣기)
+    while idx_buffer_dict["left"] < left_size:          _merge("left")
+    while idx_buffer_dict["right"] < right_size:        _merge("right")
 
 
+
+# 헬퍼함수
 # 랜덤배열 생성
 def get_random_int_list(size:int, max:int) -> list[int]:
     res = []
@@ -155,22 +186,46 @@ def printSortCorrectly(func, size:int = 10000):
 
 
 def main() :    
+
+    # 단독 육안 테스트
+    sortfunc = sort_merge
+
+    sample:list = get_random_int_list(15, 50)
+    cp_sample:list = list(sample)
+    print("orig", end=": \t")
+    print(sample)
+    sortfunc(sample, True)
+    print(is_sorted(sample, cp_sample, ascending=True), end=": \t" )
+    print(sample)
+    sample = list(cp_sample)
+    sortfunc(sample, False)
+    print(is_sorted(sample, cp_sample, ascending=False), end=": \t")
+    print(sample)
+    
+
     # 정렬검증
-    sort_list:list = [sort_bubble, sort_select, sort_insert, sort_shell, sort_quick]
-    sort_name:list = ["bubble", "select", "insert", "shell", "quick"]
+    sort_list:list = [sort_bubble, sort_select, sort_insert, sort_shell, sort_quick, sort_merge]
+    sort_name:list = ["bubble", "select", "insert", "shell", "quick", "merge"]
     for i in range(len(sort_list)):
         print(sort_name[i])
         printSortCorrectly(sort_list[i], 1000)
 
 
+    # 단일측정
+    bench_sort = sort_quick
+    single_bench_sample = get_random_int_list(100000000, 10000)
+    start = time.perf_counter()
+    bench_sort(single_bench_sample, True)
+    print(time.perf_counter() - start)
+    return
+
+
     # 소요시간 비교.
-    sort1 = sort_quick
+    sort1 = sort_merge
     sort2 = sort_shell
     time_check_compare(sort1, sort2, 1000000, 10000, 3)
 
-
     return 0;
-
 
 if __name__ == "__main__" :
     main()

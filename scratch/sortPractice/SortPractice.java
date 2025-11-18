@@ -217,7 +217,11 @@ class SortPractice {
         merge(sample, false);     print(sample);
 
         
-        // BENCHMARK
+        // SINGLE SORT BENCHMARK
+        sample = getRandArr(100000000, 10000);
+        doTest(sample, SortPractice::quick, "quick");
+
+        // BENCHMARK ALL
         boolean runBenchmark = false;
         if (!runBenchmark) return;
         

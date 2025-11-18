@@ -1,3 +1,9 @@
-algs/sort.cpp 를 기준으로 같은 알고리즘으로 원리를 이해할 겸 다른언어로 각각 작성시도.
+정렬 알고리즘
+    bubble, select, insert, shell, merge, quick (heap은 학습중)
 
-c언어 버전이 가장 더 다양한 정렬, 정확한 테스트, 빠른 테스트를 보장함.
+언어별 실행결과: 1억개의 0~10000 랜덤 배열 quick
+c,cpp : 3.0~ 3.2 초                                 포인터, register변수로 극대화
+java : 4.3 (전통배열사용)                           ArrayList, Integer 사용시 20초
+js : 6.4초                                          v8 엔진이 이렇게 좋을줄은 몰랐음
+python: 186초 (천만개도 12초).                      내장기능 sort() 사용시 직접구현한 quickPtr보다 2배는 빠름
+
