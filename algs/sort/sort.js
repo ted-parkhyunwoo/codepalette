@@ -133,12 +133,12 @@ const main = () => {
     // 육안 검사
     let sample = [ 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 ];
     printArr(sample);
-    merge(sample)
+    quick(sample)
     printArr(sample);
     
 
     // 단일시간측정
-    const func = merge;
+    const func = quick;
     let randSample = getRandIntArray(100000000, 10000)
     let startTime = performance.now()
     func(randSample)

@@ -213,11 +213,11 @@ def main() :
 
     # 단일측정
     bench_sort = sort_quick
-    single_bench_sample = get_random_int_list(100000000, 10000)
+    single_bench_sample = get_random_int_list(1000000, 10000)
     start = time.perf_counter()
     bench_sort(single_bench_sample, True)
     print(time.perf_counter() - start)
-    return
+
 
 
     # 소요시간 비교.
