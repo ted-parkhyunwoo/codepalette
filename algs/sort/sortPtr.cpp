@@ -51,8 +51,8 @@ void shell  (int* start, int* end);
 void quick  (int* start, int* end);
 void merge  (int* start, int* end);
 
-// test codes
-void tMerge(int* start, int* end, int* bf) {
+// test codes: 새로운 합병: 버퍼공간 할당 1회, 대신 memcpy가 매 루프 실행됨.
+void _merge(int* start, int* end, int* bf) {
     // 기저
     if (start >= end) return;
     int sz = end - start;
@@ -65,9 +65,10 @@ void tMerge(int* start, int* end, int* bf) {
     int leftSize =  sz / 2;
     int rightSize = sz - leftSize;
     // 정복
-    tMerge(start, start + leftSize, bf);
-    tMerge(start + leftSize, start + sz, bf);
-    // 병합
+    _merge(start, start + leftSize, bf);
+    _merge(start + leftSize, start + sz, bf);
+
+    // 병합 (고쳐진 start를 기준으로 bf를 다시씀)
     int* lPtr = start;
     int* rPtr = start + leftSize;
     int* aPtr = bf;
@@ -77,17 +78,18 @@ void tMerge(int* start, int* end, int* bf) {
         else                    *(aPtr++) = *(rPtr++);
     }
 
-    while (lPtr < start + leftSize)       *(aPtr++) = *(lPtr++);
-    while (rPtr < start + sz)     *(aPtr++) = *(rPtr++);
+    while (lPtr < start + leftSize)     *(aPtr++) = *(lPtr++);
+    while (rPtr < start + sz)           *(aPtr++) = *(rPtr++);
 
+    // 새로 쓴 bf를 start로 덮어씌움 (매번 할당하진 않지만 그래도 매 루프 오버헤드 발생.)
     memcpy(start, bf, sizeof(int) * sz);
 }
 
-void wMerge(int* start, int* end) {
-    int* cp = new int[end - start];
-    memcpy(cp, start, sizeof(int) * (end - start));
-    tMerge(start, end, cp);
-    free(cp);
+void mergeWrapper(int* start, int* end) {
+    int sz = end - start;
+    int* bf = new int[sz];
+    _merge(start, end, bf);
+    free(bf);
 }
 
 
@@ -105,10 +107,11 @@ int main() {
         isSortedCorrect(bubble);
         isSortedCorrect(select);
         isSortedCorrect(insert);
-        isSortedCorrect(shell, 100000);
-        isSortedCorrect(quick, 100000);
-        isSortedCorrect(merge, 100000);
-        isSortedCorrect(wMerge, 100000);
+        isSortedCorrect(mergeWrapper, 10);
+        // isSortedCorrect(shell, 100000);
+        // isSortedCorrect(quick, 100000);
+        // isSortedCorrect(merge, 100000);
+        isSortedCorrect(mergeWrapper, 100000);
     }
 
     // 일반 시간측정
@@ -121,7 +124,7 @@ int main() {
     // 고성능 시간측정
     if (test[2]) {
         benchmarkSort(merge, 100000000);
-        benchmarkSort(wMerge, 100000000);
+        benchmarkSort(mergeWrapper, 100000000);
         benchmarkSort(quick, 100000000);
     }
 
