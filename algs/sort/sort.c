@@ -39,7 +39,7 @@ int main() {
 
     // 다음 test 배열의 boolean 값에 따라 검사를 진행하고 return 0.
     bool test[] = {
-        false, false, true, false     // 기본테스트(출력), 무작위배열테스트(출력), 두 정렬로 정렬검증, 벤치마크테스트
+        false, false, false, true     // 기본테스트(출력), 무작위배열테스트(출력), 두 정렬로 정렬검증, 벤치마크테스트
     };
 
     srand(__builtin_ia32_rdtsc());          // 매 실행마다 다름을 보장하기 위한것이지, 보안적인 랜덤시드는 아님
@@ -111,24 +111,27 @@ int main() {
         // 기본정렬 테스트
         printf("\nNormal Sort Test:\n");
         void (*funcs[])(int*, unsigned) = {
-            bubble, selection, insert, shell, knuth_shell, merge, quick, quickPtr      // 정렬방법. 추가/삭제 가능
+            //bubble, selection, insert, shell, knuth_shell, merge, quick, quickPtr      // 정렬방법. 추가/삭제 가능
+            insert, shell, knuth_shell, merge, quick, quickPtr
         };
 
         int initSrand = 0;          // rand시드 초기화여부. 수정가능 (0 || 1)
         unsigned loop = 1;          // 평균 구할 루프 횟수. 수정가능
-        long size = 100000;         // 랜덤생성할 배열의 크기
+        long size = 10000;         // 랜덤생성할 배열의 크기
         int maxInt = 10000;         // 랜덤 추출 번호범위. 높여도 속도에 별 의미 없음
         runTests(initSrand, loop, funcs, sizeof(funcs) / sizeof(funcs[0]), size, maxInt);
 
 
-        // 고성능 테스트 : 천만개 요쇼 배열 검사
+        // 고성능 테스트
+        size = 100000000;
         printf("\nHigh Perfomance Sort Test:\n");
         void (*highPerfomFuncs[])(int*, unsigned) = {
-            shell, knuth_shell, merge, quick, quickPtr                              // 정렬방법. 추가/삭제 가능 (bubble, selection, insert는 굉장히 느림)
+            //shell, knuth_shell, merge, quick, quickPtr                              // 정렬방법. 추가/삭제 가능 (bubble, selection, insert는 굉장히 느림)
+            merge, quick, quickPtr
         };
 
         unsigned highPerfomFuncsSize = sizeof(highPerfomFuncs) / sizeof(highPerfomFuncs[0]);
-        runTests(0, 3, highPerfomFuncs, highPerfomFuncsSize, 10000000, maxInt);
+        runTests(0, 1, highPerfomFuncs, highPerfomFuncsSize, size, maxInt);
     }
     return 0;
 }
@@ -287,6 +290,11 @@ void _quickPtr(int* start, int* end) {
 void merge(int* arr, unsigned size) {
     // 기저조건: 정렬할 것이 없을 때 아무 정렬도 하지 않고 종료
     if (size <= 1) return;
+    if (size <= 64) {
+        insert(arr, size);
+        return;
+    }
+
     // 분할
     register unsigned lSize = size / 2;
     register unsigned rSize = size - lSize;

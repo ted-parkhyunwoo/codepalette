@@ -52,8 +52,43 @@ void quick  (int* start, int* end);
 void merge  (int* start, int* end);
 
 // test codes
+void tMerge(int* start, int* end, int* bf) {
+    // 기저
+    if (start >= end) return;
+    int sz = end - start;
+    if (sz <= 1) return;
+    if (sz <= MERGE_MIN_SIZE) {
+        insert(start, end);
+        return;
+    }        
+    // 분할
+    int leftSize =  sz / 2;
+    int rightSize = sz - leftSize;
+    // 정복
+    tMerge(start, start + leftSize, bf);
+    tMerge(start + leftSize, start + sz, bf);
+    // 병합
+    int* lPtr = start;
+    int* rPtr = start + leftSize;
+    int* aPtr = bf;
+    
+    while (lPtr < start + leftSize && rPtr < start + sz) {
+        if(*lPtr < *rPtr)       *(aPtr++) = *(lPtr++);
+        else                    *(aPtr++) = *(rPtr++);
+    }
 
+    while (lPtr < start + leftSize)       *(aPtr++) = *(lPtr++);
+    while (rPtr < start + sz)     *(aPtr++) = *(rPtr++);
 
+    memcpy(start, bf, sizeof(int) * sz);
+}
+
+void wMerge(int* start, int* end) {
+    int* cp = new int[end - start];
+    memcpy(cp, start, sizeof(int) * (end - start));
+    tMerge(start, end, cp);
+    free(cp);
+}
 
 
 // MAIN 
@@ -73,6 +108,7 @@ int main() {
         isSortedCorrect(shell, 100000);
         isSortedCorrect(quick, 100000);
         isSortedCorrect(merge, 100000);
+        isSortedCorrect(wMerge, 100000);
     }
 
     // 일반 시간측정
@@ -85,6 +121,7 @@ int main() {
     // 고성능 시간측정
     if (test[2]) {
         benchmarkSort(merge, 100000000);
+        benchmarkSort(wMerge, 100000000);
         benchmarkSort(quick, 100000000);
     }
 
@@ -266,30 +303,27 @@ void merge(int* start, int* end) {
     // 분할
     int leftSize =  sz / 2;
     int rightSize = sz - leftSize;
-    int* leftArr = new int[leftSize];
-    int* rightArr = new int[rightSize];
-    memcpy(leftArr, start, sizeof(int) * leftSize);
-    memcpy(rightArr, start + leftSize, sizeof(int) * rightSize);
+    int* bf = new int[sz];
+    memcpy(bf, start, sizeof(int) * sz);
 
     // 정복
-    merge(leftArr, leftArr + leftSize);
-    merge(rightArr, rightArr + rightSize);
+    merge(bf, bf + leftSize);
+    merge(bf + leftSize, bf + sz);
 
     // 병합(좌우측 하나씩 비교후 최소부터 원본에 채워넣는 정렬하면서)
-    int* lPtr = leftArr;
-    int* rPtr = rightArr;
+    int* lPtr = bf;
+    int* rPtr = bf + leftSize;
     int* aPtr = start;
     
-    while (lPtr < leftArr + leftSize && rPtr < rightArr + rightSize) {
+    while (lPtr < bf + leftSize && rPtr < bf + sz) {
         if(*lPtr < *rPtr)       *(aPtr++) = *(lPtr++);
         else                    *(aPtr++) = *(rPtr++);
     }
 
-    while (lPtr < leftArr + leftSize)       *(aPtr++) = *(lPtr++);
-    while (rPtr < rightArr + rightSize)     *(aPtr++) = *(rPtr++);
+    while (lPtr < bf + leftSize)       *(aPtr++) = *(lPtr++);
+    while (rPtr < bf + sz)     *(aPtr++) = *(rPtr++);
 
     // 해제
-    delete[] leftArr;
-    delete[] rightArr;
+    delete[] bf;
 }
 
