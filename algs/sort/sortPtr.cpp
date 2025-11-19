@@ -16,11 +16,12 @@
     추가서술:   c와의 범용성 확대를 위해 일부 cpp 구현을 컨버팅을 하면 거의 모든 기능을 c에서도 그대로 쓸 수 있음
         
     code structure:
-        HEADER
-        descripion comment
-        definition(PROTOTYPES)
-        MAIN
-        declaration
+        HEADER                      헤더선언
+        descripion comment          코드설명
+        definition(PROTOTYPES)      함수선언
+        testcodes                   구조화 되기 전 테스트 코드
+        MAIN                        메인함수
+        declaration                 함수정의(구현)
     
     functions:
         Helper: 무작위샘플배열생성, swap, 출력, 배열복사기능
@@ -50,47 +51,10 @@ void insert (int* start, int* end);
 void shell  (int* start, int* end);
 void quick  (int* start, int* end);
 void merge  (int* start, int* end);
+void _singleBfMerge(int* start, int* end, int* bf);
+void singleBfMerge(int* start, int* end);
 
-// test codes: 새로운 합병: 버퍼공간 할당 1회, 대신 memcpy가 매 루프 실행됨(해결하려면 코드 복잡성 증가). 여러환경 검증결과 cpu 혹은 메모리가 좋지않을수록 속도 등에 이득
-void _merge(int* start, int* end, int* bf) {
-    // 기저
-    if (start >= end) return;
-    int sz = end - start;
-    if (sz <= 1) return;
-    if (sz <= MERGE_MIN_SIZE) {
-        insert(start, end);
-        return;
-    }        
-    // 분할
-    int leftSize =  sz / 2;
-    int rightSize = sz - leftSize;
-    // 정복
-    _merge(start, start + leftSize, bf);
-    _merge(start + leftSize, start + sz, bf);
-
-    // 병합 (고쳐진 start를 기준으로 bf를 다시씀)
-    int* lPtr = start;
-    int* rPtr = start + leftSize;
-    int* aPtr = bf;
-    
-    while (lPtr < start + leftSize && rPtr < start + sz) {
-        if(*lPtr < *rPtr)       *(aPtr++) = *(lPtr++);
-        else                    *(aPtr++) = *(rPtr++);
-    }
-
-    while (lPtr < start + leftSize)     *(aPtr++) = *(lPtr++);
-    while (rPtr < start + sz)           *(aPtr++) = *(rPtr++);
-
-    // 새로 쓴 bf를 start로 덮어씌움 (매번 할당하진 않지만 그래도 매 루프 오버헤드 발생.)
-    memcpy(start, bf, sizeof(int) * sz);
-}
-
-void mergeWrapper(int* start, int* end) {
-    int sz = end - start;
-    int* bf = new int[sz];
-    _merge(start, end, bf);
-    free(bf);
-}
+// test codes: 
 
 
 // MAIN 
@@ -107,10 +71,10 @@ int main() {
         isSortedCorrect(bubble);
         isSortedCorrect(select);
         isSortedCorrect(insert);
-        // isSortedCorrect(shell, 100000);
-        // isSortedCorrect(quick, 100000);
-        // isSortedCorrect(merge, 100000);
-        isSortedCorrect(mergeWrapper, 100000);
+        isSortedCorrect(shell, 100000);
+        isSortedCorrect(quick, 100000);
+        isSortedCorrect(merge, 100000);
+        isSortedCorrect(singleBfMerge, 100000);
     }
 
     // 일반 시간측정
@@ -123,7 +87,7 @@ int main() {
     // 고성능 시간측정
     if (test[2]) {
         benchmarkSort(merge, 100000000);
-        benchmarkSort(mergeWrapper, 100000000);
+        benchmarkSort(singleBfMerge, 100000000);
         benchmarkSort(quick, 100000000);
     }
 
@@ -292,9 +256,9 @@ void merge(int* start, int* end) {
     // 센터기준 좌우로 나눴다가 다시 합치되, 합칠 땐 좌우 비교후 작은것 부터 채워넣음.
 
     // 기저
-    if (start >= end) return;
+    if (start >= end) return;           // 정상 사용시 도달할 리 없음.
     int sz = end - start;
-    if (sz <= 1) return;
+    if (sz <= 1) return;                // 재귀호출이 아닌 초기 호출될 경우에 도달될 가능성 있음.
 
     // 배열 길이 임계값 도달시 삽입정렬전환
     if (sz <= MERGE_MIN_SIZE) {
@@ -305,7 +269,7 @@ void merge(int* start, int* end) {
     // 분할
     int leftSize =  sz / 2;
     int rightSize = sz - leftSize;
-    int* bf = new int[sz];
+    int* bf = new int[sz];              // 개선: left, right를 따로 할당하지 않고 복사 할당하여 left, right 별 포지션을 포인터로 다룸.
     memcpy(bf, start, sizeof(int) * sz);
 
     // 정복
@@ -329,3 +293,49 @@ void merge(int* start, int* end) {
     delete[] bf;
 }
 
+
+
+void _singleBfMerge(int* start, int* end, int* bf) {
+    // 새로운 합병: 버퍼공간 할당 1회, 대신 memcpy가 매 루프 실행됨(해결하려면 코드 복잡성 증가). 여러환경 검증결과 cpu 혹은 메모리가 좋지않을수록 속도 등에 이득
+
+    // 기저
+    if (start >= end) return;
+    int sz = end - start;
+    if (sz <= 1) return;
+    if (sz <= MERGE_MIN_SIZE) {
+        insert(start, end);
+        return;
+    }        
+
+    // 분할
+    int leftSize =  sz / 2;
+    int rightSize = sz - leftSize;
+
+    // 정복: 재귀호출된 후에는 start가 아래 병합에서 aPtr로 bf를 새로쓰고, memcpy를 통해 start로 덮어씌워지므로, start로 호출하는 것에 의문을 가지거나 걱정하지 않아도 된다.
+    _singleBfMerge(start, start + leftSize, bf);
+    _singleBfMerge(start + leftSize, start + sz, bf);
+
+    // 병합: 고쳐진 start를 기준으로 bf를 다시씀
+    int* lPtr = start;
+    int* rPtr = start + leftSize;
+    int* aPtr = bf;
+    
+    while (lPtr < start + leftSize && rPtr < start + sz) {
+        if(*lPtr < *rPtr)       *(aPtr++) = *(lPtr++);
+        else                    *(aPtr++) = *(rPtr++);
+    }
+
+    while (lPtr < start + leftSize)     *(aPtr++) = *(lPtr++);
+    while (rPtr < start + sz)           *(aPtr++) = *(rPtr++);
+
+    // 갱신: 새로 쓴 bf를 start로 덮어씌움 (매번 할당하진 않지만 그래도 매 루프 오버헤드 발생 -> 해결하려면 코드 복잡성 급증)
+    memcpy(start, bf, sizeof(int) * sz);
+}
+
+void singleBfMerge(int* start, int* end) {
+    // 래퍼함수: 하나의 코드로 bf를 매번 할당하면 오버헤드 증가하므로, 래퍼로 한번만 할당. 정말 버퍼처럼 쓰는 메모리공간. 초기화 필요하지 않음.
+    int sz = end - start;
+    int* bf = new int[sz];
+    _singleBfMerge(start, end, bf);
+    free(bf);
+}
