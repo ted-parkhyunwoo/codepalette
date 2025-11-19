@@ -187,6 +187,15 @@ def printSortCorrectly(func, size:int = 10000):
 
 def main() :    
 
+    # 기본 내장 정렬의 시간측정
+    basic_test_sample = get_random_int_list(100000000, 10000)
+    print("배열생성완료. 정렬중...")
+    st = time.perf_counter()
+    basic_test_sample.sort()
+    et = time.perf_counter() - st
+    print(f"기본 내장 정렬속도: {et}s")
+
+
     # 단독 육안 테스트
     sortfunc = sort_merge
 
@@ -220,10 +229,13 @@ def main() :
 
 
 
+
     # 소요시간 비교.
     sort1 = sort_merge
     sort2 = sort_shell
     time_check_compare(sort1, sort2, 1000000, 10000, 3)
+
+    
 
     return 0;
 
