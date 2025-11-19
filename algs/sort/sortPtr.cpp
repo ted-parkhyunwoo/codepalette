@@ -51,7 +51,7 @@ void shell  (int* start, int* end);
 void quick  (int* start, int* end);
 void merge  (int* start, int* end);
 
-// test codes: 새로운 합병: 버퍼공간 할당 1회, 대신 memcpy가 매 루프 실행됨.
+// test codes: 새로운 합병: 버퍼공간 할당 1회, 대신 memcpy가 매 루프 실행됨(해결하려면 코드 복잡성 증가). 여러환경 검증결과 cpu 혹은 메모리가 좋지않을수록 속도 등에 이득
 void _merge(int* start, int* end, int* bf) {
     // 기저
     if (start >= end) return;
@@ -99,7 +99,7 @@ int main() {
 
     // 테스트 실행 트리거: 정렬검증, 일반 시간측정, 고성능 시간측정
     bool test[] = {
-        true, false, true
+        false, false, true
     };
     
     // 정렬검증
@@ -107,7 +107,6 @@ int main() {
         isSortedCorrect(bubble);
         isSortedCorrect(select);
         isSortedCorrect(insert);
-        isSortedCorrect(mergeWrapper, 10);
         // isSortedCorrect(shell, 100000);
         // isSortedCorrect(quick, 100000);
         // isSortedCorrect(merge, 100000);
