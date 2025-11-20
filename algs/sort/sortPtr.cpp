@@ -117,11 +117,11 @@ int main() {
     benchmarkSort(quick);
 
     // find Threshold
-    findOptimalThreshold(quick, &QUICK_MIN_SIZE, 5);
+    // findOptimalThreshold(quick, &QUICK_MIN_SIZE, 5);
 
     // 테스트 실행 트리거: 정렬검증, 일반 시간측정, 고성능 시간측정
     const bool test[] = {
-        false, false, false
+        false, false, true
     };
     
     // 정렬검증
