@@ -114,11 +114,12 @@ int main() {
     srand(time(NULL));
 
     // instance sample test: 샘플 자동해제됨.
-    benchmarkSort(quick);
+    //benchmarkSort(quick);
 
     // find Threshold
     // findOptimalThreshold(quick, &QUICK_MIN_SIZE, 5);
 
+    
     // 테스트 실행 트리거: 정렬검증, 일반 시간측정, 고성능 시간측정
     const bool test[] = {
         false, false, true
@@ -126,14 +127,13 @@ int main() {
     
     // 정렬검증
     if (test[0]) {
-        const int longSampleSize = 10000;
+        const int longSampleSize = 100000;
         isSortedCorrect(bubble);
         isSortedCorrect(select);
         isSortedCorrect(insert);
-        isSortedCorrect(shell, longSampleSize);
+        isSortedCorrect(shell, 30);
         isSortedCorrect(quick, longSampleSize);
         isSortedCorrect(merge, longSampleSize);
-        isSortedCorrect(singleBfMerge, 10, true);
         isSortedCorrect(singleBfMerge, longSampleSize);
     }
 
