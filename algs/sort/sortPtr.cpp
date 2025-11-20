@@ -8,14 +8,17 @@ int MERGE_MIN_SIZE = 64;
 
 constexpr int INT_SIZE = sizeof(int);
 /* DESC:
-    data type:  모든 정렬은 정수형 데이터만 사용하며, 오름차순 정렬됨
+    data type:  모든 정렬은 정수형 데이터만 사용하며, 모두 오름차순 정렬됨
                 배열의 자료형은 정수형 배열을 사용함
-    parameter:  정렬 파라미터는 두가지 모두 포인터를 사용하며, 반복자처럼 start는 배열의 시작을, end는 배열의 마지막 요소 다음을 가리킴
-    return:     정렬함수는 새로운 배열을 리턴하지 않고, 원본배열을 수정함
-    sort:       quick, merge는 임계값(배열길이 128 혹은 64 이하) 도달시 insert정렬로 전환된다. 따라서 정렬신뢰검사에는 샘플크기를 키워야함
+    parameter:  정렬함수 파라미터는 모두 정수형 포인터를 사용하며, 정수형 배열 주소포인터로 다루어짐.
+    args:       반복자처럼 start는 배열의 시작을, end는 배열의 마지막 요소 '다음'을 가리킴
+    return:     정렬함수는 void. 새로운 배열을 리턴하지 않고, 원본배열을 수정함
+    sort:       quick, merge는 임계값(배열길이 128 혹은 64 이하) 도달시 insert정렬로 됨. 따라서 정렬신뢰검사에는 샘플크기를 키워야함
     compile:    -O3 혹은 -Ofast(비권장)로 사용하면, register 키워드 명시 없이도 필요에 따라 최적화됨
-    추가서술:   c와의 범용성 확대를 위해 일부 cpp 구현을 컨버팅을 하면 거의 모든 기능을 c에서도 그대로 쓸 수 있음
-        
+    기타서술:
+                정렬 신뢰검사(올바르게 정렬되는지), 정렬소요시간측정 등이 구현됨.
+                범용성 고려. 일부 cpp 구현을 컨버팅을 하면 거의 모든 기능을 c에서도 그대로 쓸 수 있음
+
     code structure:
         HEADER                      헤더선언
         descripion comment          코드설명
@@ -30,7 +33,7 @@ constexpr int INT_SIZE = sizeof(int);
         Sort: 버블, 선택, 삽입, 쉘, 퀵, 합병정렬
 
     TODOLIST:
-        부분정렬(quick) 구현. 
+        부분정렬(quick) 구현
         힙정렬 구현
 */
 
@@ -38,13 +41,13 @@ constexpr int INT_SIZE = sizeof(int);
 // PROTOTYPES
 
 // Helper
-int* getRandomIntArr(const int size, const int max = 10000);        //! DO NOT FORGET FREE MEMORY   random integer array return.
-void printIntArr(const int* start, const int* end);                 // print array use pointer
-inline void swap(int* x, int* y);                       // swap integer data. 인라인 선언
+int* getRandomIntArr(const int size, const int max = 10000);    //! DO NOT FORGET FREE MEMORY   random integer array return.
+void printIntArr(const int* start, const int* end);             // print array use pointer
+inline void swap(int* x, int* y);                               // swap integer data. 인라인 선언
 
 // Test
-void isSortedCorrect(void (*sort)(int*, int*), const int sampleSize = 13, const bool printArr = false);   // 정렬 신뢰검사. 
-void benchmarkSort  (void (*sort)(int*, int*), const int sampleSize = 1000000);   // 정렬시간측정
+void isSortedCorrect(void (*sort)(int*, int*), const int sampleSize = 13, const bool printArr = false);     // 정렬신뢰검사 
+void benchmarkSort  (void (*sort)(int*, int*), const int* sample = nullptr, const int sampleSize = 1000000);// 정렬시간측정
 
 // Sort
 void bubble (int* start, int* end);
@@ -110,11 +113,15 @@ void findOptimalThreshold(void (*sort)(int*,int*), int* thresholdVar, int sample
 int main() {
     srand(time(NULL));
 
-    // findOptimalThreshold(quick, &QUICK_MIN_SIZE, 5);
+    // instance sample test: 샘플 자동해제됨.
+    benchmarkSort(quick);
+
+    // find Threshold
+    findOptimalThreshold(quick, &QUICK_MIN_SIZE, 5);
 
     // 테스트 실행 트리거: 정렬검증, 일반 시간측정, 고성능 시간측정
     const bool test[] = {
-        false, false, true
+        false, false, false
     };
     
     // 정렬검증
@@ -132,19 +139,24 @@ int main() {
 
     // 일반 시간측정
     if (test[1]) {
-        benchmarkSort(shell);
-        benchmarkSort(quick);
-        benchmarkSort(merge);
-        benchmarkSort(singleBfMerge);
+        const int sampleSize = 10000;
+        const int* sample = getRandomIntArr(sampleSize);
+        benchmarkSort(shell, sample, sampleSize);
+        benchmarkSort(quick, sample, sampleSize);
+        benchmarkSort(merge, sample, sampleSize);
+        benchmarkSort(singleBfMerge, sample, sampleSize);
+        delete[] sample;
     }
 
     // 고성능 시간측정
     if (test[2]) {
         const int sampleSize = 100000000;
-        benchmarkSort(merge, sampleSize);
-        benchmarkSort(singleBfMerge, sampleSize);
-        benchmarkSort(std::sort, sampleSize);
-        benchmarkSort(quick, sampleSize);
+        const int* sample = getRandomIntArr(sampleSize);
+        benchmarkSort(merge, sample, sampleSize);
+        benchmarkSort(singleBfMerge, sample, sampleSize);
+        benchmarkSort(std::sort, sample, sampleSize);
+        benchmarkSort(quick, sample, sampleSize);
+        delete[] sample;
     }
 
     return 0;
@@ -200,17 +212,24 @@ void isSortedCorrect(void (*sort)(int*, int*), const int sampleSize, const bool 
     delete[] cp;
 }
 
-void benchmarkSort(void (*sort)(int*, int*), const int sampleSize) {
-    printf("\nbenchmark (sample size %d) :\n", sampleSize);             // 함수 진입 출력
-    int* sample =                   getRandomIntArr(sampleSize);        // 샘플생성
-    const clock_t timeStart =       clock();                            // 시간측정
+void benchmarkSort(void (*sort)(int*, int*), const int* sample, const int sampleSize) {
+    // sample을 정렬하는데 걸리는 시간 측정하여 출력함. sample 입력시 복사생성(원본샘플손상금지), nullptr시 새로할당
+    printf("\nbenchmark (sample size %d) :\n", sampleSize);
 
-    sort(sample, sample + sampleSize);                                  // 정렬
-    const double timeResult =       (double)(clock() - timeStart) / CLOCKS_PER_SEC; // 시간결과 생성
+    // 사용자정의샘플, 임시샘플인지에 따라 cp를 복사하거나 새로 할당
+    bool isInstanceSample =         false;
+    if (sample == nullptr)          isInstanceSample = true;
+    int* cp = isInstanceSample?     getRandomIntArr(sampleSize) : new int[sampleSize];
+    if (!isInstanceSample)          memcpy(cp, sample, INT_SIZE * sampleSize); 
+    
+    // 정렬시간 측정
+    const clock_t timeStart =       clock();
+    sort(cp, cp + sampleSize);
+    const double timeResult =       (double)(clock() - timeStart) / CLOCKS_PER_SEC;
     
     // 결과 출력과 메모리 해제
     printf("\ttime: %.6fs.\n", timeResult);
-    delete[] sample;
+    delete[] cp;
 }
 
 
