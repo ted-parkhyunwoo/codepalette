@@ -44,7 +44,7 @@ class SortPracticeArray {
         long start = System.currentTimeMillis();
         algorithm.accept(copy, ascending);
         long spent = System.currentTimeMillis() - start;
-        System.out.println("sort: " + funcName + "\t sample size: " + (copy.length) + ",\tspent: " + spent + " ms \t (" + (spent / 1000.0) + " s)");
+        System.out.println("sort: " + funcName + "\t sample size: " + (copy.length) + "\tspent: " + spent + " ms \t (" + (spent / 1000.0) + " s)");
     }
 
     public static void bubble(int[] arr, boolean ascending) {
@@ -128,11 +128,6 @@ class SortPracticeArray {
     }
 
     public static void _merge(int[] arr, int[] left, int[] right, boolean ascending) {
-        if (arr.length <= 1) {
-            System.out.println("test: 크기 1에 도달. return");
-            return;
-        }
-
         int aSize = arr.length, lSize = left.length, rSize = right.length;
         int aIdx = 0, lIdx = 0, rIdx = 0;
 
@@ -153,6 +148,13 @@ class SortPracticeArray {
     public static void merge(int[] arr, boolean ascending) {
         int sz = arr.length;
         if (sz <= 1) return;
+        
+        // 삽입전환
+        if (sz <= 64) {
+            insert(arr, ascending);
+            return;
+        }
+
         int lSize = sz / 2;
 
         int[] left = new int[lSize];
@@ -170,34 +172,35 @@ class SortPracticeArray {
 
     public static void main(String[] args) {
         int[] sample;
+        boolean[] test = { true, false, true };
 
-        sample = getRandArr(29, 100);
-        merge(sample, true); print(sample);
-        merge(sample, false); print(sample);
-
-        sample = getRandArr(100000000, 10000);
-        doTest(sample, SortPracticeArray::quick, "quick");
-
-        boolean runBenchmark = true;
-        if (!runBenchmark) return;
-
-        sample = getRandArr(50000, 10000);
-        Map<String, BiConsumer<int[], Boolean>> sortAlgs = new LinkedHashMap<>();
-        sortAlgs.put("bubble", SortPracticeArray::bubble);
-        sortAlgs.put("select", SortPracticeArray::select);
-        sortAlgs.put("insert", SortPracticeArray::insert);
-        sortAlgs.put("shell", SortPracticeArray::shell);
-        sortAlgs.put("merge", SortPracticeArray::merge);
-        sortAlgs.put("quick", SortPracticeArray::quick);
-
-        for (String key : sortAlgs.keySet()) {
-            doTest(sample, sortAlgs.get(key), key);
+        if (test[0]) { 
+            sample = getRandArr(10, 100);
+            quick(sample, true); print(sample);
+            quick(sample, false); print(sample);
         }
 
-        sample = getRandArr(10000000, 10000);
-        System.out.println("\nHigh Perfomance Sort:");
-        doTest(sample, SortPracticeArray::shell, "shell");
-        doTest(sample, SortPracticeArray::merge, "merge");
-        doTest(sample, SortPracticeArray::quick, "quick");
+        if (test[1]) {
+            sample = getRandArr(50000, 10000);
+            Map<String, BiConsumer<int[], Boolean>> sortAlgs = new LinkedHashMap<>();
+            sortAlgs.put("bubble", SortPracticeArray::bubble);
+            sortAlgs.put("select", SortPracticeArray::select);
+            sortAlgs.put("insert", SortPracticeArray::insert);
+            sortAlgs.put("shell", SortPracticeArray::shell);
+            sortAlgs.put("merge", SortPracticeArray::merge);
+            sortAlgs.put("quick", SortPracticeArray::quick);
+
+            for (String key : sortAlgs.keySet()) {
+                doTest(sample, sortAlgs.get(key), key);
+            }
+        }
+
+        if (test[2]) {
+            sample = getRandArr(100000000, 10000);
+            System.out.println("\nHigh Perfomance Sort:");
+            // doTest(sample, SortPracticeArray::shell, "shell");
+            doTest(sample, SortPracticeArray::merge, "merge");
+            doTest(sample, SortPracticeArray::quick, "quick");
+        }
     }
 }

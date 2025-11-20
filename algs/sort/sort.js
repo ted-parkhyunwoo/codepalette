@@ -71,7 +71,27 @@ const shell = function(array) {
     }
 }
 
+
+// TODO quick 전용 전환 삽입정렬. 인레이 구현 등 리펙토링 필요
+function insertSort(array, startIdx, endIdx) {
+    for (let i = startIdx + 1; i <= endIdx; i++) {
+        let key = array[i];
+        let j = i - 1;
+        while (j >= startIdx && array[j] > key) {
+            array[j + 1] = array[j];
+            j--;
+        }
+        array[j + 1] = key;
+    }
+}
+
 const _quick = function(array, startIdx, endIdx) {
+    if (endIdx - startIdx + 1 <= 256) {
+        insertSort(array, startIdx, endIdx);
+        return;
+    }
+
+
     let leftIdx = startIdx;
     let rightIdx = endIdx;
     const centerIdx = startIdx + Math.floor((endIdx - startIdx) / 2);
@@ -133,17 +153,48 @@ const main = () => {
     // 육안 검사
     let sample = [ 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 ];
     printArr(sample);
-    quick(sample)
+    insert(sample)
     printArr(sample);
+
+
+    // 무작위 육안검사
+    {
+        console.log("///무작위 육안검사")
+        const sampleSize = 20;
+        let randSample = getRandIntArray(sampleSize, 300);
+        let cp = randSample.slice()
+        printArr(randSample);
+
+        quick(randSample);
+        shell(cp);
+        
+
+        console.log((
+            () => {
+            for (let i = 0; i < sampleSize; ++i) {
+                if (cp[i] != randSample[i]) {
+                    printArr(randSample);
+                    printArr(cp);
+                    return "정렬 실패";
+                }
+            }
+            return "배열 같음";
+        })());
+    }
     
 
     // 단일시간측정
-    const func = quick;
-    let randSample = getRandIntArray(100000000, 10000)
-    let startTime = performance.now()
-    func(randSample)
-    let resTime = performance.now() - startTime
-    print(resTime / 1000 + " s\n")
+    {
+        const func = quick;
+        const sampleSize = 100000000;
+
+
+        let randSample = getRandIntArray(sampleSize, 10000)
+        let startTime = performance.now()
+        func(randSample)
+        const resTime = performance.now() - startTime
+        print(resTime / 1000 + " s\n")
+    }
 }
 
 main()
