@@ -167,6 +167,7 @@ int main() {
 
 //! DO NOT FORGET FREE MEMORY
 int* getRandomIntArr(const int size, const int max) {
+    // 무작위 정수 배열 리턴. 반드시 사용후 할당해제.
     int* res =                              new int[size];
     for (int i = 0; i < size; ++i)          *(res + i) = rand() % max + 1;
     return res;
@@ -256,7 +257,7 @@ void select(int* start, int* end) {
 }
 
 void insert(int* start, int* end) {
-    // p 기준 좌우 분할후 p를 저장하여 , 좌측에서만 p 비교 조건만족시까지 밀어내기 후 p삽입. 반복문 종료까지 정렬 확정되지 않음.
+    // p 기준 좌측 후 p값 저장. p값을 기준으로 분할된 좌측배열에서만 검사후 적정위치 나올때까지 요소 밀어낸 후 삽입. 어느시점이든 정렬 확정 안됨.
     for (int* p = start + 1; p < end; p++) {
         const int bf = *p;
         int* q = p;
@@ -270,7 +271,8 @@ void insert(int* start, int* end) {
 }
 
 void shell(int* start, int* end) {
-    // insert와 같으나, 특정 요소가 많은 swap이 일어날정도로 거리가 멀 경우를 대비하여 gap 만큼 크게 이동후 마지막에 insert정렬(gap = 1)
+    // insert단점으로 특정 요소가 잦은 밀어내기(한칸씩) 발생을 해소하기 위해 gap 만큼 크게 이동하며, gap은 특정 조건에 따라 감소하는게 보통.
+    // 단, 마지막에 insert정렬(gap = 1). insert는 정렬이 거의 완성될수록 훨씬 빨라지므로, 지장없음
     int gap = 1;
     while (gap < (end - start) / 3)  gap = gap * 3 + 1;     // update gap using knuth gap
 
@@ -372,14 +374,14 @@ void _singleBfMerge(int* start, int* end, int* bf) {
         return;
     }        
 
-    // 분할
+    // 분할기준
     const int lSize =  sz / 2;
 
     // 정복: 재귀호출된 후에는 start가 아래 병합에서 aPtr로 bf를 새로쓰고, memcpy를 통해 start로 덮어씌워지므로, start로 호출하는 것에 의문을 가지거나 걱정하지 않아도 된다.
     _singleBfMerge(start, start + lSize, bf);
     _singleBfMerge(start + lSize, start + sz, bf);
 
-    // 병합: 고쳐진 start를 기준으로 bf를 다시씀
+    // 병합: 고쳐진 start를 기준으로 bf에 좌우 비교 채워넣기로 다시 작성.
     int* lPtr = start;
     int* rPtr = start + lSize;
     const int* lEnd = start + lSize;
@@ -394,12 +396,12 @@ void _singleBfMerge(int* start, int* end, int* bf) {
     while (lPtr < lEnd)         *(resPtr++) = *(lPtr++);
     while (rPtr < rEnd)         *(resPtr++) = *(rPtr++);
 
-    // 갱신: 새로 쓴 bf를 start로 덮어씌움 (매번 할당하진 않지만 그래도 매 루프 오버헤드 발생 -> 해결하려면 코드 복잡성 급증)
+    // 갱신: bf를 start로 덮어씌움 (매번 할당하진 않지만 그래도 매 루프 오버헤드 발생 -> 해결하려면 코드 복잡성 급증)
     memcpy(start, bf, INT_SIZE * sz);
 }
 
 void singleBfMerge(int* start, int* end) {
-    // 래퍼함수: 하나의 코드로 bf를 매번 할당하면 오버헤드 증가하므로, 래퍼로 한번만 할당. 정말 버퍼처럼 쓰는 메모리공간. 초기화 필요하지 않음.
+    // 래퍼함수: 하나의 코드로 bf를 매번 할당하면 오버헤드 증가하므로, 래퍼에서 한번만 할당. 정말 낙서장처럼 쓰는 메모리공간.
     const int sz = end - start;
     int* bf = new int[sz];
     _singleBfMerge(start, end, bf);
