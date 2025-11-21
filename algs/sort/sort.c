@@ -33,6 +33,15 @@ void _singleBfMerge(int* start, int* end, int* bf);                     // merge
 void singleBfMerge(int* arr, long size);
 
 
+// TEST
+int compare_int(const void* a, const void* b) {
+    // qsort 전용 조건 비교식 함수
+    int x = *(int*)a;
+    int y = *(int*)b;
+    return (x > y) - (x < y); // 양수, 음수, 0 반환
+}
+
+
 
 // 메인함수
 int main() {
@@ -151,6 +160,13 @@ int main() {
 
         int* sample = getRandArr(size, 10000);
         runTests(initSrand, loop, highPerfomFuncs, sizeof(highPerfomFuncs) / sizeof(highPerfomFuncs[0]), sample, size);
+
+        // qsort(stdlib.h내장) 은 구현 복잡도로 인해 단한번만 실행.
+        clock_t start = clock();
+        qsort(sample, size, sizeof(int), compare_int);
+        double res = (double)(clock() - start) / CLOCKS_PER_SEC;
+        printf("qsort 기본정렬시간: %.6f\n", res);
+
         free(sample);
     }
 
