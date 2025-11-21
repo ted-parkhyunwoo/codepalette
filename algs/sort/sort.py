@@ -259,7 +259,7 @@ def main() :
     if True:
         sort1 = sort_merge
         sort2 = sort_quick
-        time_check_compare(sort1, sort2, 1000000, 10000, 3)
+        time_check_compare(sort1, sort2, 100_000_000, 10000, 3)
     
     return 0;
 
