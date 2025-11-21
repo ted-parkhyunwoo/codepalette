@@ -18,6 +18,7 @@ constexpr int INT_SIZE = sizeof(int);
     return:     정렬함수는 void. 새로운 배열을 리턴하지 않고, 원본배열을 수정함
     sort:       quick, merge는 임계값(배열길이 128 혹은 64 이하) 도달시 insert정렬로 됨. 따라서 정렬신뢰검사에는 샘플크기를 키워야함 
     compile:    -O3 혹은 -Ofast(비권장)로 사용하면, register 키워드 명시 없이도 필요에 따라 최적화됨
+                bubble 의 경우, 이상하게 -O3가 적용되지 않은 편이 훨씬 빠름. (100만개 15초->8~9초)
     기타서술:
                 정렬 신뢰검사(올바르게 정렬되는지), 정렬소요시간측정 등이 구현됨.
                 범용성 고려. 일부 cpp 구현을 컨버팅을 하면 거의 모든 기능을 c에서도 그대로 쓸 수 있음
@@ -36,7 +37,6 @@ constexpr int INT_SIZE = sizeof(int);
         Sort: 버블, 선택, 삽입, 쉘, 퀵, 합병정렬
 
     TODOLIST:
-        부분정렬(quick) 구현
         힙정렬 구현
 */
 
@@ -59,8 +59,7 @@ void insert (int* start, int* end);
 void shell  (int* start, int* end);
 void quick  (int* start, int* end);
 void merge  (int* start, int* end);
-void _singleBfMerge(int* start, int* end, int* bf);
-void singleBfMerge(int* start, int* end);
+void sbMerge(int* start, int* end);
 
 // test codes: 
 // thresholdVar는 임계값 변수.
@@ -135,21 +134,25 @@ int main() {
         isSortedCorrect(bubble);
         isSortedCorrect(select);
         isSortedCorrect(insert);
-        isSortedCorrect(shell, 30);
+        isSortedCorrect(shell, 1000);
         isSortedCorrect(quick, longSampleSize);
         isSortedCorrect(merge, longSampleSize);
-        isSortedCorrect(singleBfMerge, longSampleSize);
+        isSortedCorrect(sbMerge, longSampleSize);
     }
 
     // 일반 시간측정
     if (test[1]) {
         printf("\n--- Benchmark Sorting ---\n");
-        const int sampleSize = 1000000;
+        const int sampleSize = 100000;
         const int* sample = getRandomIntArr(sampleSize);
+        printf("bubble\t"); benchmarkSort(bubble, sample, sampleSize);
+        printf("select\t"); benchmarkSort(select, sample, sampleSize);
+        printf("insert\t"); benchmarkSort(insert, sample, sampleSize);
         printf("shell\t");  benchmarkSort(shell, sample, sampleSize);
         printf("merge\t");  benchmarkSort(merge, sample, sampleSize);
-        printf("SBFM\t");   benchmarkSort(singleBfMerge, sample, sampleSize);
+        printf("SBFM\t");   benchmarkSort(sbMerge, sample, sampleSize);
         printf("quick\t");  benchmarkSort(quick, sample, sampleSize);
+        printf("stdsort\t");benchmarkSort(std::sort, sample, sampleSize);
         delete[] sample;
     }
 
@@ -158,10 +161,10 @@ int main() {
         printf("\n--- High Perfomance Sort ---\n");
         const int sampleSize = 100000000;
         const int* sample = getRandomIntArr(sampleSize);
-        benchmarkSort(merge, sample, sampleSize);
-        benchmarkSort(singleBfMerge, sample, sampleSize);
-        benchmarkSort(std::sort, sample, sampleSize);
-        benchmarkSort(quick, sample, sampleSize);
+        printf("merge\t");  benchmarkSort(merge, sample, sampleSize);
+        printf("SBFM\t");   benchmarkSort(sbMerge, sample, sampleSize);
+        printf("stdsort\t");benchmarkSort(std::sort, sample, sampleSize);
+        printf("quick\t");  benchmarkSort(quick, sample, sampleSize);
         delete[] sample;
     }
 
@@ -243,9 +246,12 @@ void benchmarkSort(void (*sort)(int*, int*), const int* sample, const int sample
 void bubble(int* start, int* end) {
     // 우측부터 확정정렬. 뽑은요소와 다음요소간 비교연산하며 연속 스왑.
     for (int* p = start; p < end - 1; p++) {
+        bool swapped = false;               // 개선 트리거. 한번이라도 swapped 되지 않는 루프가 있다면 실행 종료
         for (int* q = start; q < end - 1 - (p - start); q++)
             if (*q > *(q + 1))
                 swap(q, q + 1);
+                swapped = true;
+        if (!swapped) break;
     }
 }
 
@@ -366,8 +372,7 @@ void merge(int* start, int* end) {
     delete[] bf;
 }
 
-
-void _singleBfMerge(int* start, int* end, int* bf) {
+void _singleBufferMerge(int* start, int* end, int* bf) {
     // 싱글버퍼합병: 버퍼공간 할당 1회, 대신 memcpy가 매 루프 실행됨(해결하려면 코드 복잡성 증가). 여러환경 검증결과 cpu 혹은 메모리가 좋지않을수록 속도 등에 이득
 
     // 기저
@@ -383,8 +388,8 @@ void _singleBfMerge(int* start, int* end, int* bf) {
     const int lSize =  sz / 2;
 
     // 정복: 재귀호출된 후에는 start가 아래 병합에서 aPtr로 bf를 새로쓰고, memcpy를 통해 start로 덮어씌워지므로, start로 호출하는 것에 의문을 가지거나 걱정하지 않아도 된다.
-    _singleBfMerge(start, start + lSize, bf);
-    _singleBfMerge(start + lSize, start + sz, bf);
+    _singleBufferMerge(start, start + lSize, bf);
+    _singleBufferMerge(start + lSize, start + sz, bf);
 
     // 병합: 고쳐진 start를 기준으로 bf에 좌우 비교 채워넣기로 다시 작성.
     int* lPtr = start;
@@ -405,10 +410,10 @@ void _singleBfMerge(int* start, int* end, int* bf) {
     memcpy(start, bf, INT_SIZE * sz);
 }
 
-void singleBfMerge(int* start, int* end) {
+void sbMerge(int* start, int* end) {
     // 래퍼함수: 하나의 코드로 bf를 매번 할당하면 오버헤드 증가하므로, 래퍼에서 한번만 할당. 정말 낙서장처럼 쓰는 메모리공간.
     const int sz = end - start;
     int* bf = new int[sz];
-    _singleBfMerge(start, end, bf);
+    _singleBufferMerge(start, end, bf);
     delete[] bf;
 }

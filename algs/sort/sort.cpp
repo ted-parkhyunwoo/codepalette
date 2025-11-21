@@ -1,47 +1,83 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
+
+/*  DESC:
+        cpp를 최대한 활용하며, STL Container(가능하면 std::vector)와 제네릭을 구현.
+        오름차순/내림차순 선택 가능
+
+    TODO:
+        merge 구현
+
+*/ 
 
 typedef unsigned uint;
 using std::swap;
 using std::vector;
+using std::cout;
+using std::string;
 
 // 단순 컨테이너 출력용
-template <typename C> void printVector(const C& v);
-
-// ascending = true 시 오름차순(default arg), a > b 일 경우 true 리턴.
-template <typename T> bool condition(const T& a, const T& b, bool ascending = true);    // 오름,내림차순 정렬용 불리언
-bool condition(const std::string& a, const std::string&b, bool ascending = true);       // 문자열 사전정렬용 불리언(사실 std::string 은 > 혹은 < 연산자가 이미 구현되어있음)
-
-// 버블정렬: 바로 다음요소와 비교하여 swap. v[j] 와 v[j + 1] 을 비교후 swap
-// 특징: 맨 뒤부터 정렬확정
-template <typename C> void bubble(C& v, bool ascending = true);
-
-// 선택정렬: 최소값/최대값 을 찾아 맨 앞으로 swap. i를 기준으로 시작하며 j가 최소값/최대값의 index로 업데이트 된다면 swap.
-// 특징: 맨 앞부터 정렬 확정
-template <typename C> void select(C& v, bool ascending = true);
-
-// 삽입정렬 : 뽑은위치(i) 이전까지의 배열에서만 비교. 비교조건만족시 직전idx를 현재 idx로 밀어내기(swap사용안함) 후 삽입
-// 특징: 0번은 정렬된 상태로 보고 1번 idx부터 비교조건검사와 배열 밀어내기 후 특정위치 삽입. 끝날때 까지 정렬이 확정되지 않음.
-template <typename C> void insert(C& v, bool ascending = true);
-
-// 쉘정렬 : 삽입정렬의 개선(증분, gap 활용). 삽입의 경우 매우 불량한 정렬에 진행하면 많은 이동이 일어남 -> shell sort로 해결
-// 특징: step(gap) 만큼의 배열을 조작하며, step은 더 작게(/2)로 갱신(1이 될때 까지이며, 1일때 삽입정렬과 똑같아짐. 하지만 거의 정렬되어 빠름)
-// step(gap)과 갱신은 둘다 /2로 제안됐으나, 마음대로 해도 됨. 다만, 크누스수열(3^k + 1), 치우라수열(실험검증수열)이 가장 빠르다고 알려짐.
-// 크누스 수열은 knuth.c 참고
-template <typename C> void shell(C& v, bool ascending = true);
+template <typename C>   void printVector(const C& v);
+template <typename T>   bool condition(const T& a, const T& b, bool ascending = true);    // ascending = true: 오름차순(default arg), a > b  -> true
+template <typename C>   void printValidateSort(void(*sort)(C&, bool));      // std::sort와 정렬함수를 비교하여 신뢰검사
+bool condition(const string& a, const string&b, bool ascending = true);     // 문자열 사전정렬용 불리언(사실 std::string 은 > 혹은 < 연산자가 이미 구현되어있음)
+vector<int> getRandIntVec(const int size, const int max);                   // 정수형 벡터 무작위배열 리턴
+void bench(void (*sorting)(vector<int>&, bool), const int size);                  // 정렬시간측정(정수형 무작위 배열)
+void bench(const int size);                                                       // 기본정렬 사용(std::sort)
 
 
-// 사용예제 (필요에 따라 select, bubble, insert 변경, ascending 에 false등을 삽입하여 사용)
+// 정렬
+template <typename C>   void bubble (C& v, bool ascending = true);
+template <typename C>   void select (C& v, bool ascending = true);
+template <typename C>   void insert (C& v, bool ascending = true);
+template <typename C>   void shell  (C& v, bool ascending = true);
+template <typename C>   void quick  (C& v, bool ascending = true);
+template <typename C>   void merge  (C& v, bool ascending = true);
+
+
+
 int main() {
+    srand(time(NULL));
+
+
     // 정수형 vector
     vector<int> a = {8, 4, 2, 5, 1, 7, 0, 3, 9, 6};
-    shell(a);
+    bubble(a);
+    // _insert(a, 0, 4, true);
     printVector(a);
+    
 
     // 문자열 vector
-    vector<std::string> b = {"a", "b", "aa", "cba", "bba"};
-    insert(b, false);
+    vector<string> b = {"a", "b", "aa", "cba", "bba"};
+    bubble(b, false);
     printVector(b);
+
+
+    // 무작위배열 성능검증
+    {
+        cout << "\n---benchmark---\n";
+        void (*funcs[])(vector<int>& v, bool) = {
+            bubble, select, insert, shell, quick, //merge
+        };
+        // 정렬신뢰검사
+        cout << "정렬검증중...\n";
+        for (auto& f : funcs) {
+            printValidateSort(f);
+        }
+        // 벤치마크
+        cout << "시간측정중...\n";
+        for (auto& f : funcs)
+            bench(f, 100000);
+        cout << "---완료!---\n";
+    }
+
+
+    // 고성능 테스트
+    int LargeSize = 100000000;
+    bench(quick, LargeSize);
+    bench(LargeSize);
+
 
     return 0;
 }
@@ -64,7 +100,7 @@ bool condition(const T& a, const T& b, bool ascending) {
     return ascending? a > b : a < b;
 }
 
-bool condition(const std::string& a, const std::string& b, bool ascending) {
+bool condition(const string& a, const string& b, bool ascending) {
     const uint minSize = std::min(a.size(), b.size());
     for (uint i = 0; i < minSize; ++i) {
         if (a[i] == b[i]) continue;
@@ -73,13 +109,64 @@ bool condition(const std::string& a, const std::string& b, bool ascending) {
     return a.length() > b.length();             // 내림차순 정렬이라도, 짧은길이 문자열 우선으로 정렬시킴.
 }
 
+vector<int> getRandIntVec(const int size, const int max) {
+    vector<int> res(size);
+    for (int i = 0; i < size; ++i) 
+        res[i] = rand() % max + 1;
+    return res;
+}
+
+void bench(void (*sorting)(vector<int>&, bool), const int size) {
+    auto sample = getRandIntVec(size, 10000);
+    
+    clock_t sTime = clock();
+    sorting(sample, true);
+    const double res = (double)(clock() - sTime) / CLOCKS_PER_SEC;
+    printf("%.6f s\n", res);
+}
+
+void bench(const int size) {
+    auto sample = getRandIntVec(size, 10000);
+    
+    clock_t sTime = clock();
+    std::sort(sample.begin(), sample.end());
+    const double res = (double)(clock() - sTime) / CLOCKS_PER_SEC;
+    printf("%.6f s\n", res);
+}
+
+template <typename C>   void printValidateSort(void(*sort)(C&, bool)) {
+    const int sz = 10000;
+    auto sample = getRandIntVec(sz, 10000);
+    auto cp = sample;
+
+    sort(sample, true);
+    std::sort(cp.begin(), cp.end());
+    bool res = true;
+    for (int i = 0; i < sz; ++i) {
+        if (sample[i] != cp[i]) {
+            res = false;
+            break;
+        }
+    }
+
+    if (res)        cout << sz << "회 검증 성공!\n";
+    else            cout << "실패\n";
+}
+
+
+
+
 template <typename C>
 void bubble(C& v, bool ascending) {
     const uint sz = v.size();
     for (uint i = 0; i < sz - 1; ++i) {
+        bool swapped = false;
         for (uint j = 0; j < sz - i - 1; ++j)                 // 맨 뒤부터 확정정렬
-            if (condition(v[j], v[j + 1], ascending))
+            if (condition(v[j], v[j + 1], ascending)) {
                 swap(v[j], v[j + 1]);
+                swapped = true;
+            }
+        if (!swapped) break;
     }
 }
 
@@ -127,3 +214,46 @@ void shell(C& v, bool ascending) {
         step /= 2;
     }
 }
+
+template <typename C>
+void _insert(C& v, int start, int end, bool ascending) {
+    // 인덱스 기반의 삽입정렬. 부분정렬 혹은 quick의 최적화 등에 사용
+    for (uint i = start + 1; i <= end; ++i) {
+        const auto bf = v[i];
+        uint j = i;
+
+        while (j > start && condition(v[j - 1], bf, ascending)) { 
+            v[j] = v[j - 1];
+            --j;
+        }
+        if (j != i)     v[j] = bf;
+    }
+}
+
+template <typename C>
+void _quick(C& v, int left, int right, bool ascending) {
+    if (left >= right) return;
+    if (right - left <= 384) {
+        _insert(v, left, right, ascending);
+        return;
+    }
+
+    int pL = left, pR = right;
+    const auto pivot =    v[(left + right) / 2]; 
+    while (pL <= pR) {
+        while (condition(pivot, v[pL], ascending))  ++pL;
+        while (condition(v[pR], pivot, ascending))  --pR;
+        if (pL <= pR)       swap(v[pL++], v[pR--]);
+    }
+    if (left < pR)  _quick(v, left, pR, ascending);
+    if (pL < right) _quick(v, pL, right, ascending);
+}
+
+template <typename C>
+void quick(C& v, bool ascending) {
+    _quick(v, 0, (int)v.size() - 1, ascending);
+}
+
+
+template <typename C>
+void merge  (C& v, bool ascending) {}
