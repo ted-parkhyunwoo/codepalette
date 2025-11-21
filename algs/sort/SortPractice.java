@@ -1,84 +1,86 @@
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.BiConsumer;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+// ArrayList 사용시 배열 접근이 너무 느려서 전통적 배열로 작성.
+// TODO 병합정렬의 기초구현상태임(좌우측 재할당방식). 가능할 때 index기반으로 작동하게 하고, 버퍼에 저장하며, 버퍼를 한번만 선언해 재활용할 것.
+
 
 class SortPractice {
+    // ---- HELPER: 가독성을 위해 함수를 모두 축소시키는 것을 추천.  ----
 
-    // HELPER MEMBER FUNCS : 배열출력, swap, 스왑조건검사(제네릭 객체간 직접비교연산자 사용불능으로 인한), 샘플배열 생성메서드, 정렬성능 검사메서드
-    // algorithm엔 중요하지 않으므로 코드 읽는데 시간 낭비 하지 말 것.
-
-    // print arraylist
-    public static <T> void print(ArrayList<T> arr) {
-        System.out.print("[");
-        int sz = arr.size();
-        if (sz > 0) System.out.print(arr.get(0));
-        for (int i = 1; i < sz; ++i)
-            System.out.print(", " + arr.get(i));
-        System.out.println("]");
+    public static void print(int[] arr) {
+        System.out.print("[ ");
+        int sz =                        arr.length;
+        if (sz > 0)                     System.out.print(arr[0]);
+        for (int i = 1; i < sz; ++i)    System.out.print(", " + arr[i]);
+        System.out.print(" ]\n");
     }
 
-    // swap helper
-    public static <T> void swap(ArrayList<T> arr, int i, int j) {
-        T buffer = arr.get(i);
-        arr.set(i, arr.get(j));
-        arr.set(j, buffer);
+    public static void swap(int[] arr, int i, int j) {
+        int buffer =    arr[i];
+        arr[i] =        arr[j];
+        arr[j] =        buffer;
     }
 
-    // compare condition helper : 스왑이 필요한 상태인지 return boolean. 입력된 매개변수가 a, b, true 라면 a > b 시 return true. a <= b 시 false.
-    public static <T extends Comparable<T>> boolean isNeedSwap(T a, T b, boolean ascending) {
-        return ascending? a.compareTo(b) > 0 : a.compareTo(b) < 0;
+    public static boolean isNeedSwap(int a, int b, boolean ascending) {
+        return ascending? a > b : a < b;
     }
 
-    // random sample arraylist initialize helper
-    // args: array size(length), maximum random integer(크든 작든 랜덤생성 및 아래 정렬 속도에는 의미 없음)
-    public static ArrayList<Integer> getRandArr(int size, int max) {
-        Random random = new Random();
-        ArrayList<Integer> res = new ArrayList<>();
-        for (int i = 0; i < size; ++i) 
-            res.add(random.nextInt(max) + 1);
+    public static int[] getRandArr(int size, int max) {
+        Random random =                 new Random();
+        int[] res =                     new int[size];
+        for (int i = 0; i < size; ++i)  res[i] = random.nextInt(max) + 1;
         return res;
     }
 
-    // benchmark test
-    public static void doTest(
-                                ArrayList<Integer> sample,                              // sample 배열(원본을 수정하면 테스트가 공정하지 않으므로, 내부에서 복사생성됨)
-                                BiConsumer<ArrayList<Integer>, Boolean> algorithm,      // sort methods 를 매개변수로 받음
-                                String funcName                                         // sort 의 이름을 지정: 결과출력용으로만 쓰임
-                            ) {
-        boolean ascending = false;                          // you can change.
-        ArrayList<Integer> copy = new ArrayList<>(sample);
-        long start = System.currentTimeMillis();
+    public static void doTest
+    (
+        // parameter
+        int[]                       sample,
+        BiConsumer<int[], Boolean>  algorithm,
+        String                      funcName
+    ) 
+    {   
+        // definition
+        boolean ascending =             false;
+        int[] copy =                    sample.clone();
+        long start =                    System.currentTimeMillis();
         algorithm.accept(copy, ascending);
-        long spent = System.currentTimeMillis() - start;
-        System.out.println("sort: " + funcName + "\t sample size: " + (copy.size()) + ",\tspent: " + spent + " ms \t (" + (spent / 1000.0) + " s)");
+        long spent =                    System.currentTimeMillis() - start;
+
+        System.out.println(
+            "sort: " + funcName + "\t sample size: " + (copy.length) + "\tspent: " + spent + " ms \t (" + (spent / 1000.0) + " s)"
+        );
+    }
+
+    public static boolean isCorrectlySorted(int[] sorted, int[] originalSample, boolean ascending) {
+        // 정렬검사: originalSample 원본 정렬함.
+        javaSort(originalSample, ascending);
+        return Arrays.equals(sorted, originalSample);
     }
 
 
-    // SORT ALGORITHM
-    // 공통사항
-    // method type: static void methods(None return)  -> arr를 직접 수정함
-    // args:        ArrayList<compareTo 가능한 참조자료형> 정렬대상배열,  boolean 오름차순여부(true / false) 
+    // ---- SORT ALGORITHM ----
 
-    // bubble sort: 배열 우측부터 확정정렬. 매 루프에서 우측방향으로 인접한 요소끼리 swap됨.
-    public static <T extends Comparable<T>> void bubble(ArrayList<T> arr, boolean ascending) {
-        int sz = arr.size();
+    public static void bubble(int[] arr, boolean ascending) {
+        int sz = arr.length;
         for (int i = 0; i < sz - 1; ++i) {
             for (int j = 0; j < sz - i - 1; ++j) {
-                if (isNeedSwap(arr.get(j), arr.get(j + 1), ascending)) 
+                if (isNeedSwap(arr[j], arr[j + 1], ascending))
                     swap(arr, j, j + 1);
             }
         }
     }
 
-    // select sort: 배열 좌측부터 확정정렬. buffer 는 index를 기록하며, 매 루프에서 최소값(혹은 최대값)의 index를 찾아 swap
-    public static <T extends Comparable<T>> void select(ArrayList<T> arr, boolean ascending) {
-        int sz = arr.size();
-        for (int i =0; i < sz; ++i) {
+    public static void select(int[] arr, boolean ascending) {
+        int sz = arr.length;
+        for (int i = 0; i < sz; ++i) {
             int idxBuffer = i;
             for (int j = i; j < sz; ++j) {
-                if (isNeedSwap(arr.get(idxBuffer), arr.get(j), ascending))
+                if (isNeedSwap(arr[idxBuffer], arr[j], ascending))
                     idxBuffer = j;
             }
             if (idxBuffer != i)
@@ -86,164 +88,202 @@ class SortPractice {
         }
     }
 
-    // insert sort: buffer의 삽입위치를 buffer의 idx 기준 좌측부터 탐색하며, 삽입위치를 찾을때까지 요소들을 밀어냄
-    public static <T extends Comparable<T>> void insert(ArrayList<T> arr, boolean ascending) {
-        int sz = arr.size();
+    public static void insert(int[] arr, boolean ascending) {
+        int sz = arr.length;
         for (int i = 1; i < sz; ++i) {
-            // set buffer
-            T buffer = arr.get(i);
-
-            // find insert position (and shifting)
-            int j; 
-            for (j = i; j > 0 && isNeedSwap(arr.get(j - 1), buffer, ascending); --j)
-                arr.set(j, arr.get(j - 1));
-
-            // insert buffer
+            int buffer = arr[i];
+            int j;
+            for (j = i; j > 0 && isNeedSwap(arr[j - 1], buffer, ascending); --j)
+                arr[j] = arr[j - 1];
             if (j != i)
-                arr.set(j, buffer);
+                arr[j] = buffer;
         }
     }
 
-    // shell sort: insert의 매우 잦은 이동을 줄이기 위해 처음엔 띄엄띄엄 크게(step) 이동하며 줄여감.(step 아무렇게나 해도 상관없지만(size / 2로 업데이트가 스탠다드, 현재 코드는 커누스 갭 수열 사용) 마지막엔 step=1(삽입정렬) 회 실시해야하나, insert 특징이 정렬에 가까울수록 매우 빠르므로, insert에 비해 여러번 실행되더라도 획기적인 속도상승)
-    public static <T extends Comparable<T>> void shell(ArrayList<T> arr, boolean ascending) {
-        int sz = arr.size();
-
-        // init step(gap) : knuth gap
+    public static void shell(int[] arr, boolean ascending) {
+        int sz = arr.length;
         int step = 1;
         while (step < sz / 3) step = step * 3 + 1;
 
-        // update gap: insert의 너무 잦은 이동을 step만큼 점프 뛰어서 오버헤드를 크게 줄이기 위함
-        while(step > 0) {
-            // 1 대신 step으로 초기화/ 업데이트 되는 부분 빼고 instert 와 같음.
-            for (int i = step; i < sz; ++i) {      // i 는 step으로 초기화 되어 1씩 증가하며, j는 i로 초기화 되어 0보다 클때까지 step만큼 감소
-                T buffer = arr.get(i);
+        while (step > 0) {
+            for (int i = step; i < sz; ++i) {
+                int buffer = arr[i];
                 int j;
-                for (j = i; j >= step && isNeedSwap(arr.get(j-step), buffer, ascending); j -= step)
-                    arr.set(j, arr.get(j - step));
+                for (j = i; j >= step && isNeedSwap(arr[j - step], buffer, ascending); j -= step)
+                    arr[j] = arr[j - step];
                 if (j != i)
-                    arr.set(j, buffer);
+                    arr[j] = buffer;
             }
             step /= 3;
         }
     }
 
-    // quick sort core : 분할(pivot기준 좌/우 배열에서 swap)/정복(pivot기준 좌측, 우측 재귀호출)
-    public static <T extends Comparable<T>> void _quick(ArrayList<T> arr, int startIdx, int endIdx, boolean ascending) {
-        // divide: set pivot, divide left and right arrays.
+    public static void _insert(int[] arr, int startIdx, int endIdx, boolean ascending) {
+        // 삽입정렬:index기반 - quick,  merge 등 에서 쉽게 사용하기 위함
+        for (int i = startIdx + 1; i <= endIdx; ++i) {
+            int bf = arr[i];
+            int j;
+            for (j = i; j > startIdx && isNeedSwap(arr[j - 1], bf, ascending); --j)
+                arr[j] = arr[j - 1];
+            if (j != i)
+                arr[j] = bf;
+        }
+    }
+
+    public static void _quick(int[] arr, int startIdx, int endIdx, boolean ascending) {
+        // 아주 작은 배열이 재귀 실행되는것을 막기 위해 크기가 작아지면 insert로 전환
+        if (endIdx - startIdx <= 256) { _insert(arr, startIdx, endIdx, ascending);      return;}
+
         int lIdx = startIdx;
         int rIdx = endIdx;
-        T pivot = arr.get((lIdx + rIdx) / 2);
-        // find and swap
-        while(lIdx <= rIdx) {
-            // find need swap elements, 오름차순/ 내림차순 적용중.
-            while(ascending? 
-                    arr.get(lIdx).compareTo(pivot) < 0 : 
-                    arr.get(lIdx).compareTo(pivot) > 0)         lIdx++;
-            while(ascending? 
-                    arr.get(rIdx).compareTo(pivot) > 0 : 
-                    arr.get(rIdx).compareTo(pivot) < 0)         rIdx--;
-            // swap
+        int pivot = arr[(lIdx + rIdx) / 2];
+
+        while (lIdx <= rIdx) {
+            while (ascending ?
+                    arr[lIdx] < pivot :
+                    arr[lIdx] > pivot) 
+                    lIdx++;
+            while (ascending ?
+                    arr[rIdx] > pivot :
+                    arr[rIdx] < pivot) 
+                    rIdx--;
             if (lIdx <= rIdx) {
                 swap(arr, lIdx, rIdx);
                 lIdx++;
-                if (rIdx > 0)       rIdx--;         // rIdx--; 만 해도 되나, unsigned 타입을 사용하던 습관
+                if (rIdx > 0) rIdx--;       // idx 가 unsigned 자료형이라면 필요한 조건식임. 정수형은 rIdx--만으로도 충분
             }
         }
-        
-        // Conquer: recursive call
-        if (startIdx < rIdx)        _quick(arr, startIdx, rIdx, ascending);
-        if (endIdx > lIdx)          _quick(arr, lIdx, endIdx, ascending);
+
+        if (startIdx < rIdx) _quick(arr, startIdx, rIdx, ascending);
+        if (endIdx > lIdx) _quick(arr, lIdx, endIdx, ascending);
     }
 
-    // quick sort wrapper
-    public static <T extends Comparable<T>> void quick(ArrayList<T> arr, boolean ascending) {
-        _quick(arr, 0, arr.size() - 1, ascending);
+    public static void quick(int[] arr, boolean ascending) {
+        _quick(arr, 0, arr.length - 1, ascending);
     }
 
-    // merge sort core : 현재 index기반이 아님. left, right 배열 재할당중.
-    public static <T extends Comparable<T>> void _merge(ArrayList<T> arr, ArrayList<T> left, ArrayList<T> right, boolean ascending) {
-        if (arr.size() <= 1) {
-            System.out.println("test: 크기 1에 도달. return");
-            return;
-        }
-        // maximum size
-        int aSize = arr.size(), lSize = left.size(), rSize = right.size();
-        // index buffer
+    public static void _merge(int[] arr, int[] left, int[] right, boolean ascending) {
+        int aSize = arr.length, lSize = left.length, rSize = right.length;
         int aIdx = 0, lIdx = 0, rIdx = 0;
 
-        // merge
         while (aIdx < aSize && lIdx < lSize && rIdx < rSize) {
-            T leftBuffer = left.get(lIdx);
-            T rightBuffer = right.get(rIdx);
-            boolean cond = leftBuffer.compareTo(rightBuffer) < 0;
-            cond = ascending? cond : !cond;
-            if (cond)           arr.set(aIdx++, left.get(lIdx++));
-            else                arr.set(aIdx++, right.get(rIdx++));
+            boolean cond =      left[lIdx] < right[rIdx];
+                    cond =      ascending ? cond : !cond;
+
+            if (cond)           arr[aIdx++] =   left[lIdx++];
+            else                arr[aIdx++] =   right[rIdx++];
         }
-        while (lIdx < lSize)    arr.set(aIdx++, left.get(lIdx++));
-        while (rIdx < rSize)    arr.set(aIdx++, right.get(rIdx++));
+
+        while (lIdx < lSize)    arr[aIdx++] = left[lIdx++];
+        while (rIdx < rSize)    arr[aIdx++] = right[rIdx++];
     }
 
-    //  merge sort wrapper
-    public static <T extends Comparable<T>> void merge(ArrayList<T> arr, boolean ascending) {
-        // divide
-        int sz = arr.size();
-        if (sz <= 1)        return;
-        int lSize = sz / 2;
-        // TODO: 일단 쉽게 left, right 할당. 나중에 index 기반으로 수정
-        // left, right 초기화 및 arr 분할할당
-        ArrayList<T> left = new ArrayList<>();
-        ArrayList<T> right = new ArrayList<>();
-        for (int i= 0; i < sz; ++i) {
-            if (i < lSize)      left.add(arr.get(i));
-            else                right.add(arr.get(i));   
+    public static void merge(int[] arr, boolean ascending) {
+        int sz = arr.length;
+        if (sz <= 1) return;
+        
+        if (sz <= 128) {
+            insert(arr, ascending);
+            return;
         }
 
-        // conquer
+        int lSize = sz / 2;
+
+        int[] left = new int[lSize];
+        int[] right = new int[sz - lSize];
+        for (int i = 0; i < sz; ++i) {
+            if (i < lSize) left[i] = arr[i];
+            else right[i - lSize] = arr[i];
+        }
+
         merge(left, ascending);
         merge(right, ascending);
 
-        // merge
         _merge(arr, left, right, ascending);
     }
 
 
-    public static void main(String[] args) {
-        ArrayList<Integer> sample;
-        
-        // SIMPLE TEST
-        sample = getRandArr(29, 100);
-        merge(sample, true);      print(sample);
-        merge(sample, false);     print(sample);
+    // 속도비교를 위한 기본 Arrays의 정렬
+    public static void javaSort(int[] arr, boolean ascending) {
+        java.util.Arrays.sort(arr);
 
-        
-        // SINGLE SORT BENCHMARK
-        sample = getRandArr(100000000, 10000);
-        doTest(sample, SortPractice::quick, "quick");
+        // 억지로 구현한 내림차순. 작동은 되나 가능하면 리펙토링 필요
+        if (!ascending) {
+            int arrSize = arr.length;
+            int[] cp = new int[arrSize];
+            for (int i = 0; i < arrSize; ++i) {
+                cp[i] = arr[arrSize - i - 1];
+            }
+            
+            for (int i = 0; i < arrSize; ++i) {
+                arr[i] = cp[i];
+            }
 
-        // BENCHMARK ALL
-        boolean runBenchmark = false;
-        if (!runBenchmark) return;
-        
-        sample = getRandArr(50000, 10000);
-        Map<String, BiConsumer<ArrayList<Integer>, Boolean>> sortAlgs = new LinkedHashMap<>();
-        sortAlgs.put("bubble", SortPractice::bubble);
-        sortAlgs.put("select", SortPractice::select);
-        sortAlgs.put("insert", SortPractice::insert);
-        sortAlgs.put("shell", SortPractice::shell);
-        sortAlgs.put("merge", SortPractice::merge);
-        sortAlgs.put("quick", SortPractice::quick);
-        
-        for (String key : sortAlgs.keySet())        { doTest(sample, sortAlgs.get(key), key); }
-    
-
-        // HIGH PERFOMANCE
-        sample = getRandArr(10000000, 10000);
-        System.out.println("\nHigh Perfomance Sort:");
-        doTest(sample, SortPractice::shell, "shell");
-        doTest(sample, SortPractice::merge, "merge");
-        doTest(sample, SortPractice::quick, "quick");
+        }
     }
 
+    //! MAIN
+
+    public static void main(String[] args) {
+
+        boolean[] test = { 
+            true, true, true, true 
+        };
+
+        // 1. 출력 육안확인
+        if (test[0]) { 
+            System.out.println("\n--- 1. print sorted ---");
+            int[] sample = getRandArr(10, 100);
+            print(sample);
+            merge(sample, true);
+            print(sample);
+            merge(sample, false);
+            print(sample);
+        }
+
+        // 2. 정렬 신뢰성 검증
+        if (test[1]) {
+            System.out.println("\n--- 2. validate the sort ---");
+            BiConsumer<int[], Boolean> sortAlg = SortPractice::     merge;      // 변경가능
+
+            int sampleSize = 30000;
+            int[] sample = getRandArr(sampleSize, 10000);
+            int[] cpSample = sample.clone();
+            sortAlg.accept(sample, true);
+            boolean res = isCorrectlySorted(sample, cpSample, true);
+            System.out.println(String.format("[오름차순 %s]: 길이 %d 배열", res?"성공":"실패", sampleSize));
+            if (res) {
+                sortAlg.accept(sample, false);
+                res = isCorrectlySorted(sample, cpSample, false);
+                System.out.println(String.format("[내림차순 %s]: 길이 %d 배열", res?"성공":"실패", sampleSize));
+            }
+        }
+
+        // 3. 기본 벤치마크
+        if (test[2]) {
+            System.out.println("\n--- 3. benchmark sorting ---");
+            int[] sample = getRandArr(30000, 10000);
+            Map<String, BiConsumer<int[], Boolean>> sortAlgs = new LinkedHashMap<>();
+            sortAlgs.put("bubble", SortPractice::bubble);
+            sortAlgs.put("select", SortPractice::select);
+            sortAlgs.put("insert", SortPractice::insert);
+            sortAlgs.put("shell", SortPractice::shell);
+            sortAlgs.put("merge", SortPractice::merge);
+            sortAlgs.put("quick", SortPractice::quick);
+
+            for (String key : sortAlgs.keySet()) {
+                doTest(sample, sortAlgs.get(key), key);
+            }
+        }
+
+        // 4. 고성능 벤치마크
+        if (test[3]) {
+            System.out.println("\n--- 4. High Perfomance Sort ---");
+            int[] sample = getRandArr(100000000, 10000);
+            doTest(sample, SortPractice::javaSort, "javaSort");
+            doTest(sample, SortPractice::merge, "merge");
+            doTest(sample, SortPractice::quick, "quick");
+        }
+    }
 }
 
