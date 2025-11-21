@@ -5,7 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 // ArrayList 사용시 배열 접근이 너무 느려서 전통적 배열로 작성.
-// TODO 병합정렬의 기초구현상태임(좌우측 재할당방식). 가능할 때 index기반으로 작동하게 하고, 버퍼에 저장하며, 버퍼를 한번만 선언해 재활용할 것.
+// 퀵정렬 / 병합정렬에서 insert를 호출시키기 위해 index기반 정렬도 구현됨
+// 병합정렬은 기초구현(좌우측 배열 재할당) 방식과 sbMerge(버퍼를 미리 한번 할당하여 재활용)방식이 구현됨.
 
 
 class SortPractice {
@@ -203,6 +204,52 @@ class SortPractice {
     }
 
 
+    public static void _sbMerge(int[] arr, int startIdx, int endIdx, int[] bf, boolean ascending) {
+        // 기저조건
+        int sz = endIdx - startIdx + 1;
+        if (sz <= 1) return;
+        if (sz <= 64) {
+            _insert(arr, startIdx, endIdx, ascending);
+            return;
+        }
+
+        // 분할위치선정
+        int leftSz = (int)(sz / 2);
+        int rightSz = sz - leftSz;
+
+        // 정복
+        _sbMerge(arr, startIdx, startIdx + leftSz - 1, bf, ascending);
+        _sbMerge(arr, startIdx + leftSz, startIdx + sz - 1, bf, ascending);
+
+        // 합병
+        int lBegin = startIdx, rBegin = startIdx + leftSz, bIdx = startIdx;         // 시작점 인덱스기반,
+        int lEnd = startIdx + leftSz, rEnd = lEnd + rightSz, bEnd = endIdx;         // 주의: 도달하면 안됨
+        while (lBegin < lEnd && rBegin < rEnd && bIdx < bEnd) {
+            boolean cond = ascending? arr[lBegin] < arr[rBegin] : arr[lBegin] > arr[rBegin];
+            if (cond) {
+                bf[bIdx++] = arr[lBegin++];
+            } else {
+                bf[bIdx++] = arr[rBegin++];
+            }
+        }
+
+        while (lBegin < lEnd)   bf[bIdx++] = arr[lBegin++];
+        while (rBegin < rEnd)   bf[bIdx++] = arr[rBegin++];
+
+        // 결과 적용 bf -> arr
+        for (int i = startIdx; i <= endIdx; ++i)    arr[i] = bf[i];
+        // System.arraycopy(bf, startIdx, arr, startIdx, endIdx - startIdx + 1);    // 아주 미세한 성능향상
+
+    }
+
+
+    public static void sbMerge(int[] arr, boolean ascending) {
+        // 버퍼공간을 미리 할당하여 재사용.
+        int sz = arr.length;
+        int[] bf = new int[sz];
+        _sbMerge(arr, 0, sz - 1, bf, ascending);
+    }
+
     // 속도비교를 위한 기본 Arrays의 정렬
     public static void javaSort(int[] arr, boolean ascending) {
         java.util.Arrays.sort(arr);
@@ -235,24 +282,26 @@ class SortPractice {
             System.out.println("\n--- 1. print sorted ---");
             int[] sample = getRandArr(10, 100);
             print(sample);
-            merge(sample, true);
+            sbMerge(sample, true);
             print(sample);
-            merge(sample, false);
+            sbMerge(sample, false);
             print(sample);
         }
 
-        // 2. 정렬 신뢰성 검증
+        // 2. 정렬 신뢰성 검증 (비교정렬은 isCorrectlySorted 내부에서 java.util.Arrays.sort() 를 사용함)
         if (test[1]) {
             System.out.println("\n--- 2. validate the sort ---");
-            BiConsumer<int[], Boolean> sortAlg = SortPractice::     merge;      // 변경가능
+            BiConsumer<int[], Boolean> sortAlg = SortPractice::     sbMerge;      // 변경가능
 
             int sampleSize = 30000;
             int[] sample = getRandArr(sampleSize, 10000);
             int[] cpSample = sample.clone();
-            sortAlg.accept(sample, true);
-            boolean res = isCorrectlySorted(sample, cpSample, true);
+
+            sortAlg.accept(sample, true);                                           // 정렬진행
+            boolean res = isCorrectlySorted(sample, cpSample, true);     // 비교정렬 진행후 결과산출
             System.out.println(String.format("[오름차순 %s]: 길이 %d 배열", res?"성공":"실패", sampleSize));
-            if (res) {
+            
+            if (res) {  // 오름차순이 성공하면 진행됨. 샘플 오염된 채로 그대로 다시 사용(개선할 필요 없음. 어차피 재정렬)
                 sortAlg.accept(sample, false);
                 res = isCorrectlySorted(sample, cpSample, false);
                 System.out.println(String.format("[내림차순 %s]: 길이 %d 배열", res?"성공":"실패", sampleSize));
@@ -270,19 +319,21 @@ class SortPractice {
             sortAlgs.put("shell", SortPractice::shell);
             sortAlgs.put("merge", SortPractice::merge);
             sortAlgs.put("quick", SortPractice::quick);
+            sortAlgs.put("sbMerge", SortPractice::sbMerge);
 
             for (String key : sortAlgs.keySet()) {
                 doTest(sample, sortAlgs.get(key), key);
             }
         }
 
-        // 4. 고성능 벤치마크
+        // 4. 고부하 정렬 벤치마크
         if (test[3]) {
             System.out.println("\n--- 4. High Perfomance Sort ---");
             int[] sample = getRandArr(100000000, 10000);
-            doTest(sample, SortPractice::javaSort, "javaSort");
             doTest(sample, SortPractice::merge, "merge");
+            doTest(sample, SortPractice::sbMerge, "sbMerge");
             doTest(sample, SortPractice::quick, "quick");
+            doTest(sample, SortPractice::javaSort, "javaSort");
         }
     }
 }
