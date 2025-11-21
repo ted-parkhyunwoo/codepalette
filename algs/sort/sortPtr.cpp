@@ -146,10 +146,10 @@ int main() {
         printf("\n--- Benchmark Sorting ---\n");
         const int sampleSize = 1000000;
         const int* sample = getRandomIntArr(sampleSize);
-        printf("shell\t");    benchmarkSort(shell, sample, sampleSize);
-        printf("merge\t");    benchmarkSort(merge, sample, sampleSize);
-        printf("SBFM\t"); benchmarkSort(singleBfMerge, sample, sampleSize);
-        printf("quick\t");    benchmarkSort(quick, sample, sampleSize);
+        printf("shell\t");  benchmarkSort(shell, sample, sampleSize);
+        printf("merge\t");  benchmarkSort(merge, sample, sampleSize);
+        printf("SBFM\t");   benchmarkSort(singleBfMerge, sample, sampleSize);
+        printf("quick\t");  benchmarkSort(quick, sample, sampleSize);
         delete[] sample;
     }
 

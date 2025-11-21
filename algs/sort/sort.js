@@ -91,7 +91,6 @@ const _quick = function(array, startIdx, endIdx) {
         return;
     }
 
-
     let leftIdx = startIdx;
     let rightIdx = endIdx;
     const centerIdx = startIdx + Math.floor((endIdx - startIdx) / 2);
@@ -112,6 +111,11 @@ const quick = function(array) { _quick(array, 0, array.length - 1) }
 const merge = (array) => {
     const arrSz = array.length;
     if (arrSz <= 1) return;
+    
+    if (arrSz <= 256) {
+        insert(array);
+        return;
+    }
 
     // divide
     const leftSz = Math.floor(arrSz / 2);
@@ -150,48 +154,54 @@ const getRandIntArray = (size, max = 10000) => {
 }
 
 const main = () => {
-    // 육안 검사
-    let sample = [ 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 ];
-    printArr(sample);
-    insert(sample)
-    printArr(sample);
 
-
-    // 무작위 육안검사
+    // 출력
     {
-        console.log("///무작위 육안검사")
-        const sampleSize = 20;
+        let sample = [ 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 ];
+        printArr(sample);
+        insert(sample)
+        printArr(sample);
+    }
+
+    // 두 정렬 비교출력(길이 50 미만시)
+    {
+        const sampleSize = 100;
         let randSample = getRandIntArray(sampleSize, 300);
         let cp = randSample.slice()
-        printArr(randSample);
+        if (sampleSize <= 50) printArr(randSample);
 
         quick(randSample);
-        shell(cp);
+        // shell(randSample);
+        cp.sort((a, b) => a - b);
         
 
         console.log((
             () => {
             for (let i = 0; i < sampleSize; ++i) {
                 if (cp[i] != randSample[i]) {
-                    printArr(randSample);
-                    printArr(cp);
-                    return "정렬 실패";
+                    if (sampleSize <= 50) {
+                        printArr(randSample);
+                        printArr(cp);
+                    }
+                    else {
+                        console.log(`${i}번 index ${cp[i]} != ${randSample[i]}`);
+                    }
+                    return "[FAIL] 정렬 결과 같지않음";
                 }
             }
-            return "배열 같음";
+            return "[SUCCESS] 정렬 결과 같음";
         })());
     }
     
-
     // 단일시간측정
     {
-        const func = quick;
+        const func = merge;
         const sampleSize = 100000000;
-
 
         let randSample = getRandIntArray(sampleSize, 10000)
         let startTime = performance.now()
         func(randSample)
+        // randSample.sort((a, b) => a - b);       // 기본정렬 사용시
         const resTime = performance.now() - startTime
         print(resTime / 1000 + " s\n")
     }

@@ -43,7 +43,6 @@ def sort_insert(l:list, ascending:bool) -> None:
         if j != i:
             l[j] = bf
 
-
 def sort_shell(l:list, ascending:bool) -> None:
     sz:int = len(l)
     gap:int = 1
@@ -63,8 +62,24 @@ def sort_shell(l:list, ascending:bool) -> None:
                 l[j] = bf
         gap = int(gap / 3)
 
+def _sort_insert(l:list, start:int, end:int, ascending:bool) -> None:
+    # quick 등에서 사용할 index기반 삽입정렬
+    for i in range(start + 1, end + 1):
+        bf:int = l[i]
+        j:int = i
+        while j > 0 and (l[j - 1] > bf if ascending else l[j - 1] < bf):
+            l[j] = l[j - 1]
+            j -= 1
+        if j != i:
+            l[j] = bf
+
 def _quick(l:list, start:int, end:int, ascending:bool) -> None:
     if (len(l) <= 1): return
+    #! TEST 정렬전환
+    if (end - start < 512):
+        _sort_insert(l, start, end, ascending)
+        return
+    
     if start >= end: return
     # 분할
     left:int = start
@@ -90,6 +105,11 @@ def sort_merge(l:list, ascending:bool = True) -> None:
     # 분할
     a_size:int = len(l)
     if (a_size <= 1): return
+
+    if (a_size <= 64):
+        sort_insert(l, ascending)
+        return
+    
     left_size:int = int(a_size / 2)
     right_size:int = a_size - left_size
     left_list:list = l[:left_size]
@@ -187,56 +207,60 @@ def printSortCorrectly(func, size:int = 10000):
 
 def main() :    
 
-    # 기본 내장 정렬의 시간측정
-    basic_test_sample = get_random_int_list(100000000, 10000)
-    print("배열생성완료. 정렬중...")
-    st = time.perf_counter()
-    basic_test_sample.sort()
-    et = time.perf_counter() - st
-    print(f"기본 내장 정렬속도: {et}s")
-
-
     # 단독 육안 테스트
-    sortfunc = sort_merge
+    if False:
+        sortfunc = sort_quick
 
-    sample:list = get_random_int_list(15, 50)
-    cp_sample:list = list(sample)
-    print("orig", end=": \t")
-    print(sample)
-    sortfunc(sample, True)
-    print(is_sorted(sample, cp_sample, ascending=True), end=": \t" )
-    print(sample)
-    sample = list(cp_sample)
-    sortfunc(sample, False)
-    print(is_sorted(sample, cp_sample, ascending=False), end=": \t")
-    print(sample)
+        sample:list = get_random_int_list(15, 50)
+        cp_sample:list = list(sample)
+        print("orig", end=": \t")
+        print(sample)
+
+        sortfunc(sample, True)
+        # _sort_insert(sample, 0, len(sample)- 1, True)
+
+        print(is_sorted(sample, cp_sample, ascending=True), end=": \t" )
+        print(sample)
+        sample = list(cp_sample)
+
+        sortfunc(sample, False)
+        # _sort_insert(sample, 0, len(sample)- 1, False)
+
+        print(is_sorted(sample, cp_sample, ascending=False), end=": \t")
+        print(sample)
     
 
     # 정렬검증
-    sort_list:list = [sort_bubble, sort_select, sort_insert, sort_shell, sort_quick, sort_merge]
-    sort_name:list = ["bubble", "select", "insert", "shell", "quick", "merge"]
-    for i in range(len(sort_list)):
-        print(sort_name[i])
-        printSortCorrectly(sort_list[i], 1000)
+    if False:
+        sort_dict = {
+            "bubble": sort_bubble, "select": sort_select, "insert": sort_insert, "shell": sort_shell, "merge": sort_merge, "quick": sort_quick
+        }
 
-
-    # 단일측정
-    bench_sort = sort_quick
-    single_bench_sample = get_random_int_list(1000000, 10000)
-    start = time.perf_counter()
-    bench_sort(single_bench_sample, True)
-    print(time.perf_counter() - start)
+        for name in sort_dict.keys():
+            print(name)
+            printSortCorrectly(sort_dict[name], 1000)
 
 
 
+    # 단일 시간측정
+    if False:
+        bench_sort = sort_merge
+        single_bench_sample = get_random_int_list(100000000, 10000)
+        print("샘플생성완료. 정렬중...")
+        start = time.perf_counter()
+        
+        bench_sort(single_bench_sample, True)
+        # single_bench_sample.sort()            # 기본정렬로 측정
 
-    # 소요시간 비교.
-    sort1 = sort_merge
-    sort2 = sort_shell
-    time_check_compare(sort1, sort2, 1000000, 10000, 3)
+        print(time.perf_counter() - start)
 
+
+    # 소요시간 비교
+    if True:
+        sort1 = sort_merge
+        sort2 = sort_quick
+        time_check_compare(sort1, sort2, 1000000, 10000, 3)
     
-
     return 0;
 
 if __name__ == "__main__" :
