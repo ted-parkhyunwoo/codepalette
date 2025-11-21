@@ -1,96 +1,162 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include <stdbool.h>
-
-// 구조체 선언부
-typedef struct lottoStruct {                        // lotto 구조체
-    unsigned nums[45];                              // 45가지 번호 배열
-    unsigned size;                                  // nums의 크기: 45로 초기화됨
-    unsigned result[7];                             // 무작위 번호 추출을 담을 배열(bonus번호 첨부)
-    unsigned resSize;                               // 무작위 번호배열 result의 크기: 완성시 7로 변경됨
-} lotto;
 
 
-// 함수 선언부: prototype
-void init(lotto* l);                                // lottoStruct 구조체 초기화
-unsigned getRand(unsigned start, unsigned end);     // 범위 내 무작위 숫자 리턴. start, end가 포함됨
-unsigned pop(lotto* l, unsigned idx);               // lottoStruct의 nums[idx] 를 리턴하며, 해당요소를 삭제 후, size를 재조정
-void genLotto(lotto* l);                            // lottoStruct의 result를 생성
-void printLotto(lotto* l, bool printBonus);         // lottoStruct의 result를 출력
-void sortResult(lotto* l);                          // lottoStruct의 result배열중 마지막배열(bonus number)를 제외하고 오름차순 버블정렬
-void generate(unsigned gen, bool bonus);            // 모두 자동실행. gen: 생성할 갯수, bonus: 보너스번호 출력여부
-
-
-// 메인함수
-int main() {
-    unsigned long stack_noise = (unsigned long)&stack_noise;
-    srand(time(NULL) ^ getpid() ^ stack_noise);     // rand() 호출의 시드 설정(유닉스 시간 ^ 프로세스id ^ 스택 정크값)
-    generate(1, true);                              // 예: 1개의 번호를 추첨
-    generate(5, false);                             // 예: 5개의 조합을 보너스 번호 없이 생성
-    return 0;
+int* initNums() {
+    int* result =                   (int*)malloc(sizeof(int) * 45);
+    for (int i = 0; i < 45; ++i)    result[i] = i + 1;
+    return result;
 }
 
-
-// 함수 구현부
-void init(lotto* l) {
-    l->size = 45;
-    l->resSize = 0;
-    for (unsigned i = 0; i < l->size; ++i) 
-        l->nums[i] = i + 1;
+void print(const int* arr, const int size) {
+    printf("{ ");
+    if (size)                           printf("%d", arr[0]);
+    for (int i = 1; i < size; ++i)      printf(", %d", arr[i]);
+    printf(" } : %d\n", size);
 }
 
-unsigned getRand(unsigned start, unsigned end) {               
-    return ((unsigned)rand() % end) + start;
+int popIdx(int* arr, int* size, const int idx) {
+    const int res = arr[idx];
+    for (int i = idx; i < *size - 1; ++i) {
+        arr[i] = arr[i + 1];
+    }
+    *size -= 1;
+    return res;
+}    
+
+int popNum(int* arr, int* size, const int num) {
+    int idx = -1;
+    for (int i = 0; i < *size; ++i) {
+        if (arr[i] == num) idx = i;
+    }
+    if (idx == -1) { printf("없음\n"); return -1; } 
+    else return popIdx(arr, size, idx);
 }
 
-unsigned pop(lotto* l, unsigned idx) {
-    unsigned res = l->nums[idx];
-    for (unsigned i = idx; i < l->size - 1; ++i) 
-        l->nums[i] = l->nums[i + 1];
-    l->size--;
+int getRand(const int start, const int last) {
+    const int size = last - start + 1;
+    return (rand() % size) + start;
+}
+
+void sort(int* arr, const long size) {
+    for (long i = 1; i < size; ++i) {
+        const int buffer =        arr[i];
+        long j = i;
+        for (; j > 0 && arr[j - 1] > buffer; --j)
+            arr[j] = arr[j - 1];
+        if (j != i)         arr[j] = buffer;
+    }
+}
+
+int* getNums() {
+    int* res = (int*)malloc(sizeof(int) * 7);
+    int* bf = initNums();
+    int size = 45;
+    
+    for (int i = 0; i < 7; ++i) {
+        int e = popIdx(bf, &size, getRand(0, size - 1));
+        res[i] = e;
+    }
+    
+    sort(res, 6);
+    free(bf);
     return res;
 }
 
-void genLotto(lotto* l) {
-    while (l->resSize < 7) {
-        unsigned r = getRand(0, l->size);
-        l->result[l->resSize] = pop(l, r);
-        l->resSize++;
-    }
+void printGame(const int* arr, const int bonus) {
+    for (int i = 0; i < 6; ++i) 
+        printf(" %2d ", arr[i]);
+    
+    if (bonus)  printf("\tb: %d", arr[6]);
+    // printf("\n");
 }
 
-void printLotto(lotto* l, bool printBonus) {
-    for (unsigned i = 0; i < 6; ++i) {
-        printf("%d ", l->result[i]);
-        if (l->result[i] < 10) printf(" ");     // 한자리 숫자 줄맞춤
-    }
-    if (printBonus)                             // 보너스숫자 출력 (추천번호 조회할지, 당첨번호 생성할지 등에 쓰임)
-        printf(" b: %d\n", l->result[6]);
-    else
-        printf("\n");
-}
-
-void sortResult(lotto* l) {
-    for (unsigned i = 0; i < 5; ++i) {
-        for (unsigned j = 0; j < 5 - i; ++j) {
-            if (l->result[j] > l->result[j + 1]) {
-                unsigned tmp = l->result[j];
-                l->result[j] = l->result[j + 1];
-                l->result[j + 1] = tmp;
+int getRank(const int* res, const int* game) {
+    int count = 0;
+    for (int i = 0; i < 6; ++i) {
+        int r = res[i];
+        for (int j = 0; j < 6; ++j) {
+            if (r == game[j]) { 
+                count++;
+                break;
             }
         }
     }
+
+    if (count == 6) return 1;
+    else if (count == 5) {
+        const int b = res[6];
+        for (int i = 0; i < 6; ++i) {
+            if (b == game[i])  return 2;
+        }
+        return 3;
+    }
+
+    else if (count == 4) return 4;
+    else if (count == 3) return 5;
+    return 0;       //꽝
 }
 
-void generate(unsigned gen, bool bonus) {
-    lotto l;
-    while (gen > 0) {
-        init(&l);
-        genLotto(&l);
-        sortResult(&l);
-        printLotto(&l, bonus);
-        gen--;
+
+void printFiveGames() {
+    for (int i = 0; i < 5; ++i) {
+        int* tmp =      getNums();    
+        printGame(tmp, 0);
+        printf("\n");
+        free(tmp);
+    }    
+}
+
+void printWinner() {
+    int* tmp = getNums();
+    printGame(tmp, 1);
+    printf("\n");
+    free(tmp);
+}
+
+int main() { 
+    srand(time(NULL) ^ getpid());
+    
+    printFiveGames();       // 5게임 자동 출력
+    printWinner();          // 추첨번호 출력
+
+
+    // 1회당 1번의당첨번호, 5개의 자동게임을 대조하여 시뮬레이트. (1회당 1주라 생각하면 현실이랑 가장 가까움)
+    int runSimulate = 1;        // 실행 트리거 (0 || 1)
+    if (runSimulate) {
+        const long allGame = 10000;               // 총 추첨
+        const int yourGame = 5;                 // 한번에 구매할 게임 수
+
+
+        int printing = allGame <= 5? 1 : 0;
+        long result[] = {0, 0, 0, 0, 0};
+    
+        for (long i = 0; i < allGame; ++i) {
+            if (printing)       printf("\n");
+            int* res =          getNums();
+            if (printing)       printGame(res, 1);
+            if (printing)       printf("\n");
+            
+            for (int i = 0; i < yourGame; ++i) {
+                int* tmp =      getNums();    
+                if (printing)   printGame(tmp, 0);
+                int rank =      getRank(res, tmp);
+                if (printing)   printf("\t등수: %d\n", rank);
+
+                if (rank != 6)  result[rank - 1]++;
+                free(tmp);
+            }
+            
+            free(res);
+        }
+
+        printf("총 결산:\n\t");
+        for (int i = 0; i < 5; ++i) 
+            printf("%d등: %ld회   ", i + 1, result[i]);
+        printf("\n");
     }
+
+    return 0;
 }
