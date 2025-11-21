@@ -9,6 +9,6 @@ sortPtr :   2.7 ~ 2.9초                             모든 정렬 포인터 적
 임계값 크기 도달시 삽입정렬 전환 리펙토링 후:
 언어        직접구현 quick시간                      기본정렬(사용방법)                      시간            비고
 c, cpp:     2.7 ~ 2.9                               std::sort(it(ptr) begin, it(ptr) end)   2.9 ~ 3.0       병합 3.9
-java:       3.6 ~ 3.8                               java.util.Arrays.sort(arrayObject)      3.6 ~ 3.7       병합 5.7 ~ 7.3    (sbMerge. main 에서 아무것도 하지않고 이것만 측정할수록 빠르게 나옴)
-js:         5.4                                     array.sort((a, b) => a - b);            16.7            병합 13.2
-python:     150 ~ 160                               list.sort()                             10.3            병합 490(3회평균) (개선필요)
+java:       3.6 ~ 3.8                               java.util.Arrays.sort(arrayObject)      3.6 ~ 3.7       sbMerge 5.7 ~ 7.3
+js:         5.4                                     array.sort((a, b) => a - b);            16.7            병합 11.8           (java버전과 동일하게 컨버팅)
+python:     150 ~ 160                               list.sort()                             10.3            병합 490(3회평균)   (개선필요)

@@ -72,7 +72,7 @@ const shell = function(array) {
 }
 
 
-// TODO quick 전용 전환 삽입정렬. 인레이 구현 등 리펙토링 필요
+// quick, merge에서 전환용으로 쓰는 인덱스기반 삽입정렬
 function insertSort(array, startIdx, endIdx) {
     for (let i = startIdx + 1; i <= endIdx; i++) {
         let key = array[i];
@@ -108,37 +108,48 @@ const _quick = function(array, startIdx, endIdx) {
 
 const quick = function(array) { _quick(array, 0, array.length - 1) }
 
-const merge = (array) => {
-    const arrSz = array.length;
-    if (arrSz <= 1) return;
-    
-    if (arrSz <= 256) {
-        insert(array);
+function _merge(arr, startIdx, endIdx, bf) {
+    // 기저조건
+    const sz = endIdx - startIdx + 1;
+    if (sz <= 1) return;
+    if (sz <= 64) {
+        insertSort(arr, startIdx, endIdx);
         return;
     }
 
-    // divide
-    const leftSz = Math.floor(arrSz / 2);
-    const rightSz = arrSz - leftSz;
-    const leftArr = array.slice(0, leftSz)
-    const rightArr = array.slice(leftSz)
+    // 분할위치선정
+    const leftSz = Math.floor(sz / 2);
+    const rightSz = sz - leftSz;
 
-    // conquer
-    merge(leftArr);
-    merge(rightArr);
+    // 정복
+    _merge(arr, startIdx, startIdx + leftSz - 1, bf);
+    _merge(arr, startIdx + leftSz, startIdx + sz - 1, bf);
 
-    // merge
-    // 좌우측 배열에서 순서대로 뽑아 array에 재정렬
-    let lIdx = 0,  rIdx = 0,  aIdx = 0;
-
-    while (lIdx < leftSz && rIdx < rightSz) {
-        if (leftArr[lIdx] < rightArr[rIdx])     array[aIdx++] = leftArr[lIdx++]
-        else                                    array[aIdx++] = rightArr[rIdx++]
+    // 합병
+    let lBegin = startIdx, rBegin = startIdx + leftSz, bIdx = startIdx;         // 시작점 인덱스기반,
+    let lEnd = startIdx + leftSz, rEnd = lEnd + rightSz, bEnd = endIdx;         // 주의: 도달하면 안됨
+    while (lBegin < lEnd && rBegin < rEnd && bIdx < bEnd) {
+        if (arr[lBegin] < arr[rBegin]) {
+            bf[bIdx++] = arr[lBegin++];
+        } else {
+            bf[bIdx++] = arr[rBegin++];
+        }
     }
 
-    // 나머지 채워넣기
-    while (lIdx < leftSz)       array[aIdx++] = leftArr[lIdx++]
-    while (rIdx < rightSz)      array[aIdx++] = rightArr[rIdx++]
+    while (lBegin < lEnd)   bf[bIdx++] = arr[lBegin++];
+    while (rBegin < rEnd)   bf[bIdx++] = arr[rBegin++];
+
+    // 결과 적용 bf -> arr
+    for (let i = startIdx; i <= endIdx; ++i)    arr[i] = bf[i];
+    // System.arraycopy(bf, startIdx, arr, startIdx, endIdx - startIdx + 1);    // 아주 미세한 성능향상
+
+}
+
+function merge(array) {
+    // 버퍼공간을 미리 할당하여 재사용하는 방식으로 개선.
+    let sz = array.length;
+    let bf = [];
+    _merge(array, 0, sz - 1, bf);
 }
 
 const getRandInt = (max) => {
@@ -159,7 +170,7 @@ const main = () => {
     {
         let sample = [ 2, 3, 7, 1, 9, 6, 0, 5, 4, 8 ];
         printArr(sample);
-        insert(sample)
+        quick(sample)
         printArr(sample);
     }
 
@@ -171,10 +182,8 @@ const main = () => {
         if (sampleSize <= 50) printArr(randSample);
 
         quick(randSample);
-        // shell(randSample);
         cp.sort((a, b) => a - b);
         
-
         console.log((
             () => {
             for (let i = 0; i < sampleSize; ++i) {
@@ -195,13 +204,13 @@ const main = () => {
     
     // 단일시간측정
     {
-        const func = merge;
+        const func = quick;
         const sampleSize = 100000000;
 
         let randSample = getRandIntArray(sampleSize, 10000)
         let startTime = performance.now()
         func(randSample)
-        // randSample.sort((a, b) => a - b);       // 기본정렬 사용시
+        // randSample.sort((a, b) => a - b);       // 기본정렬로 측정시: 생각보다 많이 느림
         const resTime = performance.now() - startTime
         print(resTime / 1000 + " s\n")
     }

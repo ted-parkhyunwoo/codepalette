@@ -9,7 +9,7 @@ import java.util.Map;
 // 병합정렬은 기초구현(좌우측 배열 재할당) 방식과 sbMerge(버퍼를 미리 한번 할당하여 재활용)방식이 구현됨.
 
 
-class SortPractice {
+class Sort {
     // ---- HELPER: 가독성을 위해 함수를 모두 축소시키는 것을 추천.  ----
 
     public static void print(int[] arr) {
@@ -272,8 +272,9 @@ class SortPractice {
     //! MAIN
 
     public static void main(String[] args) {
-
+        
         boolean[] test = { 
+            // 테스트 실행 스위치. 필요한 것만 최소로 골라 실행할 수록 측정결과가 좋게 나오는 경향이 있음(특히 sbMerge)
             true, true, true, true 
         };
 
@@ -291,7 +292,7 @@ class SortPractice {
         // 2. 정렬 신뢰성 검증 (비교정렬은 isCorrectlySorted 내부에서 java.util.Arrays.sort() 를 사용함)
         if (test[1]) {
             System.out.println("\n--- 2. validate the sort ---");
-            BiConsumer<int[], Boolean> sortAlg = SortPractice::     sbMerge;      // 변경가능
+            BiConsumer<int[], Boolean> sortAlg = Sort::     sbMerge;      // 변경가능
 
             int sampleSize = 30000;
             int[] sample = getRandArr(sampleSize, 10000);
@@ -313,13 +314,13 @@ class SortPractice {
             System.out.println("\n--- 3. benchmark sorting ---");
             int[] sample = getRandArr(30000, 10000);
             Map<String, BiConsumer<int[], Boolean>> sortAlgs = new LinkedHashMap<>();
-            sortAlgs.put("bubble", SortPractice::bubble);
-            sortAlgs.put("select", SortPractice::select);
-            sortAlgs.put("insert", SortPractice::insert);
-            sortAlgs.put("shell", SortPractice::shell);
-            sortAlgs.put("merge", SortPractice::merge);
-            sortAlgs.put("quick", SortPractice::quick);
-            sortAlgs.put("sbMerge", SortPractice::sbMerge);
+            sortAlgs.put("bubble", Sort::bubble);
+            sortAlgs.put("select", Sort::select);
+            sortAlgs.put("insert", Sort::insert);
+            sortAlgs.put("shell", Sort::shell);
+            sortAlgs.put("merge", Sort::merge);
+            sortAlgs.put("quick", Sort::quick);
+            sortAlgs.put("sbMerge", Sort::sbMerge);
 
             for (String key : sortAlgs.keySet()) {
                 doTest(sample, sortAlgs.get(key), key);
@@ -330,10 +331,10 @@ class SortPractice {
         if (test[3]) {
             System.out.println("\n--- 4. High Perfomance Sort ---");
             int[] sample = getRandArr(100000000, 10000);
-            doTest(sample, SortPractice::merge, "merge");
-            doTest(sample, SortPractice::sbMerge, "sbMerge");
-            doTest(sample, SortPractice::quick, "quick");
-            doTest(sample, SortPractice::javaSort, "javaSort");
+            doTest(sample, Sort::merge, "merge");
+            doTest(sample, Sort::sbMerge, "sbMerge");
+            doTest(sample, Sort::quick, "quick");
+            doTest(sample, Sort::javaSort, "javaSort");
         }
     }
 }
