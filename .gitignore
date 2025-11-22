@@ -13,3 +13,4 @@ build/
 *.so
 *.dll
 .vim/
+*.o

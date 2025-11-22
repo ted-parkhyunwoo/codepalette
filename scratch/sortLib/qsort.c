@@ -1,8 +1,7 @@
 // qsort.c
 
-int QUICK_MIN_SIZE = 384;                   // insertion sort로 전환될 배열크기 임계값 상수
 
-inline void swap(int* x, int* y) {
+void swap(int* x, int* y) {
     const int tmp = *x;
     *x = *y;
     *y = tmp;
@@ -28,7 +27,7 @@ void quick(int* start, int* end) {          // end 혹은 right, 재귀호출과
 
     const int sz =      end - start;
     if (sz <= 1)        return;
-    if (sz <= QUICK_MIN_SIZE)       { insert(start, end);       return; }
+    if (sz <= 384)       { insert(start, end);       return; }
 
     // 분할
     int* lPtr =         start;
