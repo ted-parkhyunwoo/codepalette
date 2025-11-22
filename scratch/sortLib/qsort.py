@@ -28,34 +28,21 @@ qsort = ffi.dlopen("./libqsort.so")
 
 
 # ctypes로 선언
-try:
-    lib = cdll.LoadLibrary('./libqsort.so')        #!리눅스는 so로 하면 됨: gcc -fPIC -shared -O3 qsort.c -o libqsort.so
-except OSError as e:
-    print(f"오류: libqsort.so 파일을 로드할 수 없습니다. 컴파일을 확인하세요. ({e})")
-    exit()
-
-# 2. C 함수 prototype 정의
-# quick(int* start, int* end)
+lib = cdll.LoadLibrary('./libqsort.so')
 lib.quick.argtypes = [POINTER(c_int), POINTER(c_int)]
 lib.quick.restype = None
 
-
-#! 아래 두 함수는 ctypes 를 위해 사용.
 def convert_pylist_to_c_int_array(py_list:list):
     c_int_array = c_int * len(py_list)
     c_int_array_result = c_int_array(*py_list)
     return c_int_array_result
 
 def sort_python_list_ctypes(py_list, ascending:bool = True):
-    """
-    Python 리스트를 C 배열 포인터로 변환하고 quick 함수를 호출합니다.
-    """
     arr_len = len(py_list)
     
     # Python list -> C style Array (int[])
     start_time = time.perf_counter()    
     c_arr = convert_pylist_to_c_int_array(py_list)           #! 전환
-    
 
     start_ptr = c_arr 
 
@@ -150,7 +137,6 @@ def _quick(l:list, start:int, end:int, ascending:bool) -> None:
 
 def sort_quick(l:list, ascending:bool) -> None:
     _quick(l, 0, len(l) - 1, ascending)
-
 
 
 

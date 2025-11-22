@@ -1,15 +1,16 @@
 #include <iostream>
 #include "qsort.h"
+#include <unistd.h>
 
 int* getRandArr(int size, int max) {
     int* res = new int[size];
     for (int i = 0; i < size; ++i)
         res[i] = rand() % max + 1;
     return res;
-
 }
 
 int main() {
+    srand(time(NULL) ^ getpid());
     int size = 100000000;
     int* sample = getRandArr(size, 10000);
 
