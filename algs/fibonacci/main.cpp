@@ -1,6 +1,7 @@
 #include <iostream>
 #include "fibonacci.h"
 
+// argv로 입력받은 string을 int로 변환하여 fibonacci 생성
 int main(int argc, char* argv[]) {
     if (argc < 2) return -1;
     char* arg = argv[1];
