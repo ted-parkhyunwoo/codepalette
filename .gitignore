@@ -10,3 +10,6 @@ out/
 build/
 *.out
 .DS_store
+*.so
+*.dll
+.vim/
