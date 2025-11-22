@@ -15,7 +15,7 @@ PRINT_SORT_LOG:bool = False     #! sort_python_list 내부에 시간측정 프�
 PRINT_TIME_DETAIL:bool = False  #! main의 3번검사(단일시간측정) 에서 '정렬시간 외' 배열 생성시간, 총소요시간 출력여부
 
 try:
-    lib = cdll.LoadLibrary('./libqsort.dll')        #!리눅스는 so로 하면 됨
+    lib = cdll.LoadLibrary('./libqsort.dll')        #!리눅스는 so로 하면 됨: gcc -fPIC -shared -O3 qsort.c -o libqsort.so
 except OSError as e:
     print(f"오류: libqsort.dll 파일을 로드할 수 없습니다. 컴파일을 확인하세요. ({e})")
     exit()
