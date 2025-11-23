@@ -60,7 +60,15 @@
                gcc main.c -L./lib -lqsort -Wl,-rpath,./lib        // 권장
             gcc main.c -L./lib -lqsort 한 이후라면: 
                export LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH     // 비추천
-      
+         windows의 경우 library 파일의 위치가 같은 디렉토리 내에 있도록 거의 강제되어, -Wl,-rpath,./lib 는 무효처리됨
+            1. 임시 환경변수 수정
+               export PATH="$PWD/lib:$PATH"        // git bash
+               set PATH=%CD%\lib;%PATH%            // cmd
+               $env:PATH = "$PWD\lib;" + $env:PATH // powershell
+
+            2. 나머지 방법들도 많으나, 코드를 수정하는 방향이 많음. 가능하면 위 방법으로 하거나, 아래 object파일 링킹, 혹은 함께컴파일 권장
+
+                  
 
    2. object파일로 같이 컴파일
       오브젝트 컴파일(바이너리화)
