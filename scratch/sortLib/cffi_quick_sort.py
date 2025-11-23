@@ -11,7 +11,7 @@ ffi.cdef("""
 
          """)
 
-qsort = ffi.dlopen("./libqsort.so")
+qsort = ffi.dlopen("./lib/libqsort.so")
 
 # list를 이용한 cffi버전 quick: 매개변수를 직접 수정할 수 없어 아래 for문으로 요소 모두 재할당 (메모리 오버헤드 증가. 함수 실행시간 상승)
 def qsort_cffi(py_list: list) -> None:

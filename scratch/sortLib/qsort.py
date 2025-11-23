@@ -23,12 +23,12 @@ ffi = FFI()
 ffi.cdef("""
     void quick(int* start, int* end);
 """)
-qsort = ffi.dlopen("./libqsort.so")
+qsort = ffi.dlopen("./lib/libqsort.so")
 
 
 
 # ctypes로 선언
-lib = cdll.LoadLibrary('./libqsort.so')
+lib = cdll.LoadLibrary('./lib/libqsort.so')
 lib.quick.argtypes = [POINTER(c_int), POINTER(c_int)]
 lib.quick.restype = None
 

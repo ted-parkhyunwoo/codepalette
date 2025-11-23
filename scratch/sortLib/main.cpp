@@ -1,5 +1,5 @@
 #include <iostream>
-#include "qsort.h"
+#include "./lib/qsort.h"
 #include <unistd.h>
 
 int* getRandArr(int size, int max) {
