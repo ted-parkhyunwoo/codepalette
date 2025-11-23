@@ -11,7 +11,9 @@ ffi.cdef("""
 
          """)
 
-qsort = ffi.dlopen("./lib/libqsort.so")
+dll_path = os.path.join(os.path.dirname(__file__), "lib", "libqsort.dll")   
+#! 윈도우를 사용중이라면 dll_path 경로로 입력한다. ctypes는 멀쩡하나, cffi 가 windows 에서 dll파일을 찾는데 문제가 있음.(ctypes는 상관없음)
+qsort = ffi.dlopen(dll_path)
 
 # list를 이용한 cffi버전 quick: 매개변수를 직접 수정할 수 없어 아래 for문으로 요소 모두 재할당 (메모리 오버헤드 증가. 함수 실행시간 상승)
 def qsort_cffi(py_list: list) -> None:

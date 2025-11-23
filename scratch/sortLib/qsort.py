@@ -12,6 +12,7 @@ import time
 import ctypes
 from ctypes import cdll, c_int, POINTER, sizeof
 from cffi import FFI
+import os
 
 PRINT_SORT_LOG:bool = False     #! sort_python_list 내부에 시간측정 프린트 여부
 PRINT_TIME_DETAIL:bool = True  #! main의 3번검사(단일시간측정) 에서 '정렬시간 외' 배열 생성시간, 총소요시간 출력여부
@@ -23,11 +24,15 @@ ffi = FFI()
 ffi.cdef("""
     void quick(int* start, int* end);
 """)
+
+# dll_path = os.path.join(os.path.dirname(__file__), "lib", "libqsort.dll")   #! so를 dll로만 바꾸는것으로 윈도우에서 사용불가(cffi만)
+# qsort = ffi.dlopen(dll_path)
 qsort = ffi.dlopen("./lib/libqsort.so")
 
 
 
 # ctypes로 선언
+# lib = cdll.LoadLibrary(dll_path)                      #!ctypes 는 windows에서 dll로 바꿔도 작동은 제대로 됨
 lib = cdll.LoadLibrary('./lib/libqsort.so')
 lib.quick.argtypes = [POINTER(c_int), POINTER(c_int)]
 lib.quick.restype = None
