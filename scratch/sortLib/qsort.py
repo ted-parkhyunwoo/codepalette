@@ -25,14 +25,15 @@ ffi.cdef("""
     void quick(int* start, int* end);
 """)
 
-# dll_path = os.path.join(os.path.dirname(__file__), "lib", "libqsort.dll")   #! so를 dll로만 바꾸는것으로 윈도우에서 사용불가(cffi만)
+ #! so를 dll로만 바꾸는것으로 윈도우에서 사용불가(cffi만) dirname 부분은 os.getcwd() 대체가능
+# dll_path = os.path.join(os.path.dirname(__file__), "lib", "libqsort.dll")  
 # qsort = ffi.dlopen(dll_path)
 qsort = ffi.dlopen("./lib/libqsort.so")
 
 
 
 # ctypes로 선언
-# lib = cdll.LoadLibrary(dll_path)                      #!ctypes 는 windows에서 dll로 바꿔도 작동은 제대로 됨
+# lib = cdll.LoadLibrary(dll_path)                      #!ctypes 는 windows에서 so 확장자 대신 dll로만 바꿔도 작동되나, 편의상 추가
 lib = cdll.LoadLibrary('./lib/libqsort.so')
 lib.quick.argtypes = [POINTER(c_int), POINTER(c_int)]
 lib.quick.restype = None

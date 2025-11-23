@@ -11,7 +11,7 @@ ffi.cdef("""
 
          """)
 
-dll_path = os.path.join(os.path.dirname(__file__), "lib", "libqsort.dll")   
+dll_path = os.path.join(os.getcwd(), "lib", "libqsort.dll")   
 #! 윈도우를 사용중이라면 dll_path 경로로 입력한다. ctypes는 멀쩡하나, cffi 가 windows 에서 dll파일을 찾는데 문제가 있음.(ctypes는 상관없음)
 qsort = ffi.dlopen(dll_path)
 

@@ -31,6 +31,7 @@
          큰 크기의 배열과 파이썬 리스트간 언팩도 빠른편이고 속도도 ctypes에 비해 월등함.
          포인터 변수에 직접 정수길이를 대입하는 등 간편한 편  def qsort_cffi(py_list: list) -> None:   메서드 참고.
          단점으로 vscode등에서 타입오류표기되는 코드들이 있음. # type: ignore  처리하여 해제함.
+         windows의 경우 라이브러리 경로를 절대경로로 넣거나 os.path.join으로 런타임 path 설정하도록 주의하도록 한다. ./lib/libqsort.dll 같은건 찾질 못함.
 
 
 
@@ -60,13 +61,25 @@
                gcc main.c -L./lib -lqsort -Wl,-rpath,./lib        // 권장
             gcc main.c -L./lib -lqsort 한 이후라면: 
                export LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH     // 비추천
-         windows의 경우 library 파일의 위치가 같은 디렉토리 내에 있도록 거의 강제되어, -Wl,-rpath,./lib 는 무효처리됨
+         windows의 경우 library 파일의 위치가 같은 디렉토리 내에 있도록 거의 강제되어, -Wl,-rpath,./lib 는 무효처리됨. 컴파일은 위 방법과 동일하게 되나 실행을 못함.
             1. 임시 환경변수 수정
                export PATH="$PWD/lib:$PATH"        // git bash
                set PATH=%CD%\lib;%PATH%            // cmd
                $env:PATH = "$PWD\lib;" + $env:PATH // powershell
 
-            2. 나머지 방법들도 많으나, 코드를 수정하는 방향이 많음. 가능하면 위 방법으로 하거나, 아래 object파일 링킹, 혹은 함께컴파일 권장
+            2. 실행시 dll을 main.c 혹은 main.cpp와 같은 경로에 놓고 실행
+               gcc -shared ./lib/qsort.c -o ./lib/libqsort.dll
+               gcc main.c -L./lib -lqsort
+               컴파일은 동일하나 실행하기 전 lib/libqsort.dll 을 a.exe 옆에 두어야 정상작동
+
+            3. windows 혹은 System32, PATH에 라이브러리 넣기(비권장)
+               gcc -shared ./lib/qsort.c -O3 -o ./lib/libqsort.dll -Wl,--out-implib,./lib/libqsort.a  (이걸로 해야할 수도 있음)
+               gcc -shared ./lib/qsort.c -o ./lib/libqsort.dll
+               gcc main.c -L./lib -lqsort
+               여기까진 기존의 방법과 똑같음(so -> dll 빼고).
+               이후 libqsort.dll 파일만 windows 혹은 System32에 복사
+
+            4. 나머지 방법들도 많으나, 코드를 수정하는 방향이 많음. 가능하면 위 방법으로 하거나, 아래 object파일 링킹, 혹은 함께컴파일 권장
 
                   
 
