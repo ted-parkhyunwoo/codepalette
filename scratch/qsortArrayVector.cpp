@@ -1,25 +1,20 @@
-#include <iostream>
-#include <time.h>
 #include <vector>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
 
-void makeRandArr(int* res, int size, int max = 100000) {
+void makeRandArr(int* res, int size, int max = 10000) {
     for (int i = 0; i < size; ++i) 
         res[i] = rand() % max + 1;
 }
 
-void makeRandVec(std::vector<int>& v, int max = 100000) {
-    for (int& e : v) {
+void makeRandVec(std::vector<int>& v, int max = 10000) {
+    for (int& e : v) 
         e = rand() % max + 1;
-    }
 }
 
-void swap(int* x, int* y) {
-    const int tmp = *x;
-    *x = *y;
-    *y = tmp;
-}
-
-void insert(int* start, int* end) {
+inline void insert(int* start, int* end) {
     for (int* p = start + 1; p < end; p++) {
         const int bf = *p;
         int* q = p;
@@ -30,8 +25,8 @@ void insert(int* start, int* end) {
     }
 }
 
-void insert(std::vector<int>::iterator start, std::vector<int>::iterator end) {
-    for (auto p = start + 1; p < end; p++) {
+inline void insert(std::vector<int>::iterator start, std::vector<int>::iterator end) {
+    for (auto p = start + 1; p < end; ++p) {
         const int bf = *p;
         auto q = p;
         for (; q > start && bf < *(q - 1); --q)
@@ -54,7 +49,7 @@ void quick(int* start, int* end) {
         while (pivot > *lPtr)       ++lPtr;
         while (pivot < *rPtr)       --rPtr;
         if (lPtr <= rPtr) {
-            swap(lPtr, rPtr);
+            std::swap(*lPtr, *rPtr);
             ++lPtr;
             --rPtr;
         }
@@ -89,21 +84,21 @@ void quick(std::vector<int>::iterator start, std::vector<int>::iterator end) {
 
 
 int main() {
-
+    srand(time(NULL) ^ getpid());
     int sz = 100000000;
-    int* test2 = new int[sz];
-    makeRandArr(test2, sz, 100000);
+    int* test = new int[sz];
+    makeRandArr(test, sz);
     clock_t sTime = clock();
-    quick(test2, test2 + sz);
-    printf("%.8f s\n", (double)(clock() - sTime) / CLOCKS_PER_SEC);
-    delete[] test2;
+    quick(test, test + sz);
+    printf("%.6f s", (double)(clock() - sTime) / CLOCKS_PER_SEC);
+    delete[] test;
 
 
     std::vector<int> vec(sz);
-    makeRandVec(vec, 10000);
+    makeRandVec(vec);
     sTime = clock();
     quick(vec.begin(), vec.end());
-    printf("%.8f s\n", (double)(clock() - sTime) / CLOCKS_PER_SEC);
+    printf("\t%.6f s\n", (double)(clock() - sTime) / CLOCKS_PER_SEC);
 
     return 0;
 }
