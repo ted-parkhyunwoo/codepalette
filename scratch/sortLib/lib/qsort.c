@@ -1,6 +1,5 @@
 // qsort.c
 
-
 void swap(int* x, int* y) {
     const int tmp = *x;
     *x = *y;
@@ -19,7 +18,6 @@ void insert(int* start, int* end) {
             *q = bf;
     }
 }
-
 
 void quick(int* start, int* end) {
     const int sz =      end - start;
