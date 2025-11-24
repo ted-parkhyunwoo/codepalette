@@ -2,7 +2,7 @@
 #define SORT_SHELL_H
 
 void shell(int* begin, int* end) {
-    int gap = 1;
+    unsigned gap = 1;
     while (gap < (end - begin) / 3) gap = gap * 3 + 1;
 
     for (; gap > 0; gap /= 3) {
