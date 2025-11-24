@@ -1,5 +1,5 @@
-#ifndef SORT_SELECT_H
-#define SORT_SELECT_H
+#ifndef SELECT_SORT_H
+#define SELECT_SORT_H
 
 void select_sort(int* begin, int* end) {
     if (begin >= end) return;
