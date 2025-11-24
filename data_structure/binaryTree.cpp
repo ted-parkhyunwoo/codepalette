@@ -2,8 +2,7 @@
 
 // 이진트리 예제
 
-
-// node구조체
+// node 구조체
 struct node {
     std::string name;
     node*       left;
@@ -22,10 +21,15 @@ struct tree {
 
     static node* find(node* root, const std::string& name) {
         // 재귀식으로 name에 해당하는 노드 찾기. 
+
+        // root가 비어있음(재귀에선 찾지 못한경우)
         if (root == NULL)           return NULL;
-        if (root->name == name)     return root;        
-        node* leftFound =            tree::find(root->left, name);
+        // root를 name으로 찾음(재귀에선 하위에서 찾음)
+        if (root->name == name)     return root;
+        // 좌측 자식노드에서 찾음  
+        node* leftFound =           tree::find(root->left, name);
         if (leftFound != NULL)      return leftFound;
+        // 우측 자식노드에서 찾았거나 찾지못한경우(첫번 째 라인이 재귀호출)
         return                      tree::find(root->right, name);
     }
 
