@@ -3,18 +3,22 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+// prototypes
+
 // 삭제 검토중
 // void print(const int* arr, const int size);             // 디버그 배열 출력용.
 // int popNum(int* arr, int* size, const int num);         // 현재 사용 안되는듯. 점검.
 
-// 저수준 코드: 일부 함수가 메모리 동적할당 되나, 고수준 인터페이스에서 메모리 할당/해제가 제어되는 상태. 직접사용시 주의
-int* initNums();                                        // !!동적할당 주의!!  1~45 까지의 번호를 임의 생성.
+// 저수준 코드: 일부 함수 동적할당. 고수준 래퍼 메서드에서 할당/해제 제어됨. 따라서 직접사용시 주의. 필요시 프로토타입에서 주석해제
+/*
+int* initNums();                                        // 동적할당 주의!!  1~45 까지의 번호를 임의 생성.
 int popIdx(int* arr, int* size, const int idx);         // index 기반 요소삭제 and 삭제된 요소 리턴(파이썬, js 형식으로 구현해봄)
 int getRandInt(const int start, const int last);        // start - last 까지의 번호 무작위 리턴
 void sort(int* arr, const long size);                   // 배열 정렬용(당첨번호 및 사용자 자동게임 정렬용)
-int* getNums();                                         // !!동적할당 주의!! 6 ~ 7(bonus) 개의 무작위 게임 번호 배열 생성
+int* getNums();                                         // 동적할당 주의!! 6 ~ 7(bonus) 개의 무작위 게임 번호 배열 생성
 void printGame(const int* arr, const int bonus);        // getNums()로 생성한 배열을 출력. bonus는 보너스번호 출력여부(당첨번호용)
 int getRank(const int* res, const int* game);           // res(당첨번호), game(사용자번호) 로 등수 계산 TODO: 이진탐색 리펙토링 고려
+*/
 
 // 고수준 인터페이스 메서드
 static void printFiveGames();           // 5게임 자동 출력 (자동 번호를 받아 실제 마킹하여 사용할 때 유용)
@@ -23,7 +27,7 @@ static void printFiveGamesSimulator(int games);         // 1회 시뮬레이터 
 static void doLottoSimulate(const long weeks, const unsigned games);   // weeks수 만큼 추첨, 매주 games게임 총 당첨횟수 출력
 
 
-
+//! MAIN: 사용예제
 int main() {
     srand(time(NULL) ^ getpid());
     
@@ -38,6 +42,7 @@ int main() {
 }
 
 
+// 함수 정의
 
 int* initNums() {
     int* res =                   (int*)malloc(sizeof(int) * 45);
