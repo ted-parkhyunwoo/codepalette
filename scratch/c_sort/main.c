@@ -7,6 +7,7 @@
 #include "helper.h"
 
 int main() {
+    srand(time(NULL));
     void (*sort) (int*, int*)  = quick;
     is_sort_work_correctly(sort);
 
