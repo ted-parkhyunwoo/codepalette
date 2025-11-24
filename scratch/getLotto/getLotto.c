@@ -100,7 +100,7 @@ int getRank(const int* res, const int* game) {
 }
 
 
-void printFiveGames() {
+static void printFiveGames() {
     for (int i = 0; i < 5; ++i) {
         int* tmp =      getNums();    
         printGame(tmp, 0);
@@ -109,31 +109,55 @@ void printFiveGames() {
     }    
 }
 
-void printWinner() {
+static void printWinner() {
     int* tmp = getNums();
     printGame(tmp, 1);
     printf("\n");
     free(tmp);
 }
 
+static void printFiveGamesSimulator(int allGames) {
+    int* winner = getNums();
+    int win = 0;
+    for (int i = 0; i < allGames; ++i) {
+        int* game = getNums();
+        int rank = getRank(winner, game);
+        printGame(game, 0);
+        if (rank != 0)  {
+            printf(": [%d등 당첨]", rank);
+            win++;
+        }
+        printf("\n"); 
+        free(game);
+    }
+
+    if (!win) printf("[모두 낙첨]\n");
+    printf("추첨번호: "); printGame(winner, 1); printf("\n");
+    free(winner);
+}
+
 int main() { 
     srand(time(NULL) ^ getpid());
     
-    printFiveGames();       // 5게임 자동 출력
-    printWinner();          // 추첨번호 출력
+    // printFiveGames();            // 5게임 자동 출력 (자동 번호를 받아 실제 마킹하여 사용할 때 유용)
+    // printWinner();               // 추첨번호 출력   (당첨번호 임의 생성)
+
+    printFiveGamesSimulator(5);     // 매개변수 allGames 횟수의 자동게임 출력, 당첨내역 출력, 추첨번호 출력 (전체 시뮬)
 
 
-    // 1회당 1번의당첨번호, 5개의 자동게임을 대조하여 시뮬레이트. (1회당 1주라 생각하면 현실이랑 가장 가까움)
-    int runSimulate = 1;        // 실행 트리거 (0 || 1)
+    // 1회당 yourGame개의 자동게임을 대조. 매회 새로운 당첨번호, 추첨번호가 갱신됨 (매주 구매시 복권을 몇 번구매시 몇 번의 당첨이 이루어지는지 시뮬레이트 용)
+    // runSimulate 1 로 변경시 실행되며, allGame동안 모든 당첨내역 출력됨
+    int runSimulate = 0;                        // 실행 트리거 (0 || 1)
     if (runSimulate) {
-        const long allGame = 10000;               // 총 추첨
+        const long allGame = 10000;             // 총 추첨
         const int yourGame = 5;                 // 한번에 구매할 게임 수
 
 
-        int printing = allGame <= 5? 1 : 0;
-        long result[] = {0, 0, 0, 0, 0};
+        int printing = allGame <= 5? 1 : 0;     // 게임 횟수가 과하게 많으면(5회초과) 추첨번호는 출력하지 않음
+        long result[] = {0, 0, 0, 0, 0};        // 전체 당첨 결과를 담는 배열
     
         for (long i = 0; i < allGame; ++i) {
+            // res = 당첨번호 tmp = 무작위 사용자 번호 rank =  res기준 tmp의 등수
             if (printing)       printf("\n");
             int* res =          getNums();
             if (printing)       printGame(res, 1);
