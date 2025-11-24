@@ -43,8 +43,8 @@ static int compare_for_qsort(const void* a, const void*b) {
 
 static void is_sort_work_correctly(void (*sortFunc)(int*, int*)) {
     const unsigned size = 1000;
-    int* sample = malloc(sizeof(int) * size);
-    int* sorted = malloc(sizeof(int) * size);
+    int* sample = (int*)malloc(sizeof(int) * size);
+    int* sorted = (int*)malloc(sizeof(int) * size);
     for (unsigned i = 0; i < size; ++i) {
         sample[i] = rand() % 10000 + 1;
         sorted[i] = sample[i];
