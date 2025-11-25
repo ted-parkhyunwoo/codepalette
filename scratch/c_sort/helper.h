@@ -14,17 +14,19 @@ typedef struct intArr{
 static void printArr(int* begin, int* end) {
     printf("{ ");
     if (end > begin) printf("%d", *begin);
-    for (int* p = begin + 1; p < end; ++p) 
+    for (int* p = begin + 1; p < end; ++p)
         printf(", %d", *p);
     printf(" }\n");
 }
 
 void init_int_arr(int_arr* iArr, const unsigned sz, const unsigned max_int) {
+    clock_t start = clock();
     iArr->sz = sz;
     iArr->array = (int*)malloc(sz * sizeof(int));
     int* p = iArr->array;
     for (unsigned i = 0; i < sz; ++i)
         *(p + i) = rand() % max_int + 1;
+    printf("complete init sample: (%.6f seconds)\n", (double)(clock() - start) / CLOCKS_PER_SEC);
 }
 
 void delete_int_arr(int_arr* iArr) {
@@ -74,7 +76,7 @@ void bench_sort_int_arr(int_arr iArr, void (*sortFunc)(int*, int*), const int di
 
     const clock_t start = clock();
     sortFunc(cp, cp + iArr.sz);
-    printf("res: %.6f s (size: %d)\n", (double)(clock() - start) / CLOCKS_PER_SEC, iArr.sz);
+    printf("result time: %.6f s (size: %d)\n", (double)(clock() - start) / CLOCKS_PER_SEC, iArr.sz);
     if (!directSort)
         free(cp);
 }

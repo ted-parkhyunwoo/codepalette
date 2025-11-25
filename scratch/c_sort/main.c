@@ -5,10 +5,11 @@
 #include "shell.h"
 #include "quick.h"
 #include "helper.h"
+#include "merge.h"
 
 int main() {
     srand(time(NULL));
-    void (*sort) (int*, int*)  = quick;
+    void (*sort) (int*, int*)  = merge;
     is_sort_work_correctly(sort);
 
     const unsigned sampleSize = 100000000;
