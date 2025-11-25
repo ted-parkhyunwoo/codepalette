@@ -6,15 +6,13 @@
 #include "quick.h"
 #include "merge.h"
 
-
-
 int main() {
     srand(time(NULL));
 
     const void (*sortArr[])(int*, int*)  = {
 
-        // bubble, select_sort, insert,         // 사용시 샘플사이즈 주의(느림)
-        shell, merge, quick
+        // bubble, select_sort, insert, shell,      // 사용시 샘플사이즈 주의(느림)
+        merge, quick
     };
 
     const unsigned sampleSize = 100000000;
