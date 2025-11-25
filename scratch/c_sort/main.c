@@ -11,7 +11,7 @@
 int main() {
     srand(time(NULL));
 
-    void (*sortArr[])(int*, int*)  = {
+    const void (*sortArr[])(int*, int*)  = {
 
         // bubble, select_sort, insert
         shell, merge, quick
@@ -20,8 +20,8 @@ int main() {
     const unsigned sampleSize = 100000000;
     int_arr sample;
 
-    for (int i = 0; i < sizeof(sortArr) / sizeof(sortArr[0]); i++) {
-        void (*sort)(int*, int*) = sortArr[i];
+    for (unsigned i = 0; i < sizeof(sortArr) / sizeof(sortArr[0]); i++) {
+        const void (*sort)(int*, int*) = sortArr[i];
         is_sort_work_correctly(sort);
 
         init_int_arr(&sample, sampleSize, 10000);
