@@ -13,7 +13,7 @@ int main() {
 
     const void (*sortArr[])(int*, int*)  = {
 
-        // bubble, select_sort, insert
+        // bubble, select_sort, insert,         // 사용시 샘플사이즈 주의(느림)
         shell, merge, quick
     };
 
