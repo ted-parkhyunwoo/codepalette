@@ -76,7 +76,7 @@ void bench_sort_int_arr(int_arr iArr, void (*sortFunc)(int*, int*), const int di
 
     const clock_t start = clock();
     sortFunc(cp, cp + iArr.sz);
-    printf("result time: %.6f s (size: %d)\n", (double)(clock() - start) / CLOCKS_PER_SEC, iArr.sz);
+    printf("result time: %.6f s (size: %d)\n\n", (double)(clock() - start) / CLOCKS_PER_SEC, iArr.sz);
     if (!directSort)
         free(cp);
 }

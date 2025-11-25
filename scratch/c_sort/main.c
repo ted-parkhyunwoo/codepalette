@@ -1,27 +1,36 @@
-
+#include "helper.h"
 #include "bubble.h"
 #include "select_sort.h"
 #include "insert.h"
 #include "shell.h"
 #include "quick.h"
-#include "helper.h"
 #include "merge.h"
+
+
 
 int main() {
     srand(time(NULL));
-    void (*sort) (int*, int*)  = merge;
-    is_sort_work_correctly(sort);
+
+    void (*sortArr[])(int*, int*)  = {
+
+        // bubble, select_sort, insert
+        shell, merge, quick
+    };
 
     const unsigned sampleSize = 100000000;
-
     int_arr sample;
-    init_int_arr(&sample, sampleSize, 10000);
 
-    if (sampleSize <= 20)  print_int_arr(sample);
-    bench_sort_int_arr(sample, sort, 1);
-    if (sampleSize <= 20)  print_int_arr(sample);
+    for (int i = 0; i < sizeof(sortArr) / sizeof(sortArr[0]); i++) {
+        void (*sort)(int*, int*) = sortArr[i];
+        is_sort_work_correctly(sort);
 
-    delete_int_arr(&sample);
+        init_int_arr(&sample, sampleSize, 10000);
+
+        if (sampleSize <= 20)  print_int_arr(sample);
+        bench_sort_int_arr(sample, sort, 1);
+        if (sampleSize <= 20)  print_int_arr(sample);
+        delete_int_arr(&sample);
+    }
 
     return 0;
 }
