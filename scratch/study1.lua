@@ -99,13 +99,24 @@ print "\n배열설명 끝"; -- 괄호 없는 print 구문도 유효하다.
 print("---") -- 구획 분리
 
 --------------------------------------------------
--- 6. 해시맵 (Hashmap)
+-- 6. 해시맵 (Hashmap) unordered_map 처럼 순서보장X
 --------------------------------------------------
 
 local mydict = { a = 1, b = 2, c = 3, d = 4 };
 
+-- 페어 추가 (dot접근, []접근)
+mydict.e = 5
+mydict["f"] = 6
+mydict.g = 8
+
+-- 페어 수정
+mydict.g = 7
+
+-- 페어 삭제
+mydict.g = nil
+
+
 -- Advanced for (Generic For): pairs() 함수를 사용해 키(k)와 값(v)을 순회
--- 참고: pairs()는 순서 보장 안된다.
 print("[해시맵] 순회 결과:")
 for k, v in pairs(mydict) do
     print(string.format("%s = %d", k, v));
