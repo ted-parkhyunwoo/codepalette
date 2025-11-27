@@ -75,7 +75,7 @@ console.log(copyNew)
 // 람다식은 웬만하면 남들이 보기도 이해하기 어려울 수 있으므로, 간단한 것 아니면 분리 구현하자
 const evenSum = copyNew.reduce((res, elem) => {
     if (elem % 2 === 0)
-        return res += current
+        return res += elem
     else return res
 }, 0)
 console.log(`evenSum: ${evenSum}`)
