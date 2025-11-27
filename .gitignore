@@ -14,3 +14,7 @@ build/
 *.dll
 .vim/
 *.o
+.settings/
+.classpath
+.project
+*.prefs

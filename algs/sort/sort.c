@@ -97,7 +97,7 @@ int main() {
     // 3. 정렬 신뢰검사:    func로 할당된 정렬방법으로 qsort와 비교하여 검사. 'testLoop'회 만큼 'sz'크기의 무작위배열 검사
     if (test[2])
     {
-        const void (*func)(int*, long) = {
+        void (*func)(int*, long) = {
             
             // 정렬방법
             quickPtr
@@ -233,7 +233,7 @@ bool isSameArr(const int* first, const int* last, const long sz) {
     // first 배열과 last 배열이 같음을 검증
     for (long i = 0; i < sz; ++i)
         if (*(first + i) != *(last + i)) {
-            printf("%d: %d != %d\n", i, *(first + i), *(last + i));
+            printf("%ld: %d != %d\n", i, *(first + i), *(last + i));
             return false;
         }
     return true;

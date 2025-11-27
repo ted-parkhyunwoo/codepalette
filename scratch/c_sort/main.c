@@ -9,7 +9,7 @@
 int main() {
     srand(time(NULL));
 
-    const void (*sortArr[])(int*, int*)  = {
+    void (*sortArr[])(int*, int*)  = {
 
         // bubble, select_sort, insert, shell,      // 사용시 샘플사이즈 주의(느림)
         merge, quick
@@ -19,7 +19,7 @@ int main() {
     int_arr sample;
 
     for (unsigned i = 0; i < sizeof(sortArr) / sizeof(sortArr[0]); i++) {
-        const void (*sort)(int*, int*) = sortArr[i];
+        void (*sort)(int*, int*) = sortArr[i];
         is_sort_work_correctly(sort);
 
         init_int_arr(&sample, sampleSize, 10000);

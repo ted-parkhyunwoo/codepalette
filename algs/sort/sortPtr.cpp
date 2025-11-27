@@ -1,7 +1,7 @@
-#include <iostream>
-#include <time.h>
+#include <cstdio>
+#include <ctime>
+#include <cstring>
 #include <algorithm>            // 일부환경에서는 다음 두 헤더가 선언되어야함 (std::is_sorted, memcpy)
-#include <string.h>
 
 //! 임계값 사용할지 여부. QUICK_MIN_SIZE 혹은 MERGE_MIN_SIZE 값에 따라 샘플배열 크기가 작으면 오리지날 퀵, 병합정렬이 실행되지 아니할 수 있음
 int USE_THRESHOLD = 1;
