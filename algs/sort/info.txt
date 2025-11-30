@@ -1,3 +1,8 @@
+정렬에 대한 remind 시 보면 좋은 코드:
+        sort.c          size 기반의 정렬 : quick(int* arr, int sz)
+        sortPtr.cpp     pointer 기반(반복자와 비슷)정렬 : quick(int* begin, int* end)
+
+
 언어별 실행결과: 1억개의 0~10000 랜덤 배열 quick
 c,cpp :     3.0 ~ 3.2 초                            포인터, register변수로 극대화
 java :      4.3 (전통배열사용)                      ArrayList, Integer 사용시 20초
