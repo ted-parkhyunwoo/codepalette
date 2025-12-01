@@ -243,7 +243,7 @@ bool isSameArr(const int* first, const int* last, const long sz) {
 
 
 void bubble(int* arr, long size) {
-    // 최소값 찾기. 큰 값을 찾아 배열 오른쪽으로 밀어냄 (거품이 교차되듯이)
+    // j와 j + 1의 교환. 최소값 찾기지만 최대값 교차하며 밀어내기. i의 기저조건 size - 1, j의 기저조건 size - 1 - i 에 주의
     for (long i = 0; i < size - 1; ++i) {
         bool swapped = false;
         for (long j = 0; j < size - 1 - i; ++j) {
@@ -257,7 +257,7 @@ void bubble(int* arr, long size) {
 }
 
 void selection(int* arr, long size) {
-    // 0번 인덱스부터 최소값을 찾고(선택), 있다면 0번과 스왑. 바뀐건 다음 루프에서 처리
+    // i부터(1씩증가) 마지막까지의 배열들중 최소값의 인덱스를 찾아 i로 꽂아넣음.
     for (long i = 0; i < size; ++i) {
         long minIdx = i;
         for (long j = i; j < size; ++j) {
@@ -268,7 +268,7 @@ void selection(int* arr, long size) {
 }
 
 void insertion(int* arr, long size) {
-    // i를 기준으로 i의 좌측 배열만 조정하며, 최소값/최대값 등을 저장후 삽입위치 정해질 때 까지 배열을 한칸씩 밀어냄.
+    // i를 기준으로 좌측배열만 조정(이로인해 1로 초기화). 따라서 j는 i로 초기화 되며 1씩감소. i요소를 bf로 저장해 삽입위치 j가 정해질 때까지 직전요소를 현재위치로 밀어낸 후 bf를 j로 삽입.
     for (long i = 1; i < size; ++i) {
         int buffer =        arr[i];
         long j = i;
