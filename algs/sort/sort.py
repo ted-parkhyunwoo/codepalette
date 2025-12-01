@@ -206,10 +206,13 @@ def printSortCorrectly(func, size:int = 10000):
 
 
 def main() :    
+    tests = [
+        False, False, True, False
+    ]
 
     # 단독 육안 테스트
-    if False:
-        sortfunc = sort_quick
+    if tests[0]:
+        sortfunc = sort_shell
 
         sample:list = get_random_int_list(15, 50)
         cp_sample:list = list(sample)
@@ -231,7 +234,7 @@ def main() :
     
 
     # 정렬검증
-    if False:
+    if tests[1]:
         sort_dict = {
             "bubble": sort_bubble, "select": sort_select, "insert": sort_insert, "shell": sort_shell, "merge": sort_merge, "quick": sort_quick
         }
@@ -243,7 +246,7 @@ def main() :
 
 
     # 단일 시간측정
-    if False:
+    if tests[2]:
         bench_sort = sort_merge
         single_bench_sample = get_random_int_list(100000000, 10000)
         print("샘플생성완료. 정렬중...")
@@ -256,7 +259,7 @@ def main() :
 
 
     # 소요시간 비교
-    if True:
+    if tests[3]:
         sort1 = sort_merge
         sort2 = sort_quick
         time_check_compare(sort1, sort2, 100_000_000, 10000, 3)

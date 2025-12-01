@@ -145,7 +145,8 @@ int main() {
         printf("\n--- Benchmark Sorting ---\n");
         const int sampleSize = 100000;
         const int* sample = getRandomIntArr(sampleSize);
-        printf("bubble\t"); benchmarkSort(bubble, sample, sampleSize);
+        // 버블은 느려서 주석처리
+        // printf("bubble\t"); benchmarkSort(bubble, sample, sampleSize);
         printf("select\t"); benchmarkSort(select, sample, sampleSize);
         printf("insert\t"); benchmarkSort(insert, sample, sampleSize);
         printf("shell\t");  benchmarkSort(shell, sample, sampleSize);
@@ -248,9 +249,10 @@ void bubble(int* start, int* end) {
     for (int* p = start; p < end - 1; p++) {
         bool swapped = false;               // 개선 트리거. 한번이라도 swapped 되지 않는 루프가 있다면 실행 종료
         for (int* q = start; q < end - 1 - (p - start); q++)
-            if (*q > *(q + 1))
+            if (*q > *(q + 1)) {
                 swap(q, q + 1);
                 swapped = true;
+            }
         if (!swapped) break;
     }
 }
