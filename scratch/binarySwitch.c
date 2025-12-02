@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+// 주의: 자료형 선택시 부호 없는 자료형을 사용하는것이 bit shifting, 출력문 등에 문제 발생 여지를 없앨 수 있다.
+
 // gemini 구현
 void print_uint8_binary(uint8_t n) {
     // 7번째 비트(MSB)부터 0번째 비트(LSB)까지 반복
@@ -82,6 +84,11 @@ int main() {
 
 
     // 스위치 제어 예제. mem을 손상하지 않고 res로 업데이트
+    /* 활용 예: 
+        1. 통신 등에 어떠한 입력들(동시)이 있었는지 정수값 하나만 전송하면 빠른속도로 동시입력 전송 가능
+        2. 현 상태에 대한 정보를 담을 저장공간(메모리 혹은 디스크공간)을 정수값 하나만 할당하여 저장 가능
+    */
+
     printf("\n논리연산자를 통한 스위치 제어 예제:\n");
     uint8_t mem, mask, res;
     
@@ -90,15 +97,25 @@ int main() {
 
     // mem에서 mask로 지정된 것이 활성화 되어있는지 검사
     res =  mem & mask;
-    printf("활성스위치: \t");
+    printf("\n활성스위치: \t");
     printBin(res);                  // 00000011 & 00000001      ->  00000001
 
     mem =  0B01010101;
     mask = 0B10101010;
 
+
+    // 스위치 상태 확인 응용 (8개의 스위치 on/off 검사)
+    printf("\n스위치상태: \n");
+    uint8_t mySwitch = 0B01010101;
+    for (unsigned want_to_see = 0; want_to_see < 8; ++want_to_see) {        // 0 ~ 7. 마지막자리부터 탐색(쉬프트)됨.
+        uint8_t isOn = mySwitch & (1 << want_to_see);
+        printf("\t%i 번 스위치: %s\n", want_to_see, isOn? "true" : "false");
+    }
+
+
     // 켜기(전에 켜져있든 꺼져있든)
     res = mem | mask;               // 01010101 | 10101010      ->  11111111
-    printf("켜기 결과: \t");
+    printf("\n켜기 결과: \t");
     printBin(res);
 
     // 끄기(A & ~B)
@@ -106,6 +123,23 @@ int main() {
     printf("끄기 결과: \t");
     printBin(res);
 
+
+    // XOR 스위치: mask에 1처리된 부분만 토글가능
+    mem = 0B00001010;
+    mask = 0B00001111;
+    res = mem ^ mask;   // 0101: mask에서 1로 처리된 곳만 mem에서 반전
+    res = res ^ mask;   // 1010: res 를 다시 반전하여 복구
+    printBin(res);
+
+
+    // XOR 연산 응용: 정수의 tmp, bf 할당 없이 swap처리
+    int a = 3;
+    int b = 5;
+    printf("%d, %d\n", a, b);
+    a = a ^ b;
+    b = a ^ b;
+    a = a ^ b;
+    printf("%d, %d\n", a, b);
 
 	return 0;
 }
