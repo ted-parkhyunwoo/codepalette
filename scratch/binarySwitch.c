@@ -18,7 +18,7 @@ void print_uint8_binary(uint8_t n) {
 }
 
 void printBin(uint8_t n) {
-    char* binString = malloc(sizeof(char) * 9);    // 반전 위해 필요한 공간. string출력을 안하기 때문에 null공간 배제
+    char* binString = malloc(sizeof(char) * 9);    // 반전 위해 필요한 공간.
     
     unsigned binIdx = 0;
     while(n > 0) {
