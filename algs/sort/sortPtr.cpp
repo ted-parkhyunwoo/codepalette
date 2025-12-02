@@ -314,7 +314,7 @@ void quick(int* start, int* end) {          // end 혹은 right, 재귀호출과
     // 분할
     int* lPtr =         start;
     int* rPtr =         end - 1;       //  보정: end는 마지막요소가 아님.마지막 요소 다음을 가리킴.
-    const int pivot =   *(start + ((sz) / 2));
+    const int pivot =   *(start + ((sz) / 2));  // 피봇 선택은 랜덤/정규분포 등을 이용해봤으나, 센터값이 가장 빠르고 균등함.
 
     // 분할정렬: pivot 기준으로 작은쪽은 left로, 큰쪽은 right로 스왑. 조건: 교차직후 종료
     while (lPtr <= rPtr) {
