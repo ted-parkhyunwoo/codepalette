@@ -1,22 +1,42 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+/*
+
+  흥미로운점: 
+    aot 방식이 jit 방식에 비해 실행되는 속도는 빠르다고 일반적으로 알려져있으나, 아주 큰 크기의 메모리, 연산 집약 작업에는 오히려 느린 현상.
+    추측하자면 jit은 아주 공격적인 최적화가 진행되지만, aot 환경에서는 안정적인 실행우선이며, gc 타이밍이나 memory->cache->register->cpu 이동간 오버헤드 증가 버그가 있는듯 함.
+
+  컴파일 방식: 
+    js: 몇천줄이 넘음. 같은알고리즘이지만, js로 짠 것보다 압도하도록 느림.
+    aot-snapshot: 최소한의 바이너리만 포함하여 용량을 줄이고, dartaotruntime sort.aot 식으로 실행.
+    jit-snapshot: javac 같은 역할과 비슷함. 중간언어로 컴파일. dart sort.jit 등으로 실행. 속도는 jit과 동일
+
+  속도비교: 
+    dart -> js:         quick: 9,   merge: 24 로 js  (quick: 5    merge: 11)처럼 같은 알고리즘의 js로 짠 코드보다 거의 두배 느림
+    jit, jit-snapshot:  quick: 3.8, merge: 5.9로 java(quick: 4.0, merge:6.8)와 비슷하거나 약간 빠름
+    aot, aot-snapshot:  quick: 21   merge: 37 로 가장 느리지만, 실사용은 가능한 정도.
+
+*/
+
+
 void main(List<String> args) {
 
-  // sortBench(quick, 100_000_000, useInt32List: true);
-  sortBench(quick, 10, useInt32List: true, printArray: true);
+  sortBench(merge, 100_000_000, useInt32List: true);
+  sortBench(quick, 100_000_000, useInt32List: true);
+  // sortBench(merge, 20, useInt32List: true, printArray: true);
 
 }
 
 
 // 정렬 벤치마킹
 void sortBench(sortfunc sf, int sampleSize, { required bool useInt32List, bool printArray = false}) {
-  // sample의 자료형은 런타임환경에 결정된다.
+  // sample의 자료형은 런타임환경에 결정. 두가지 자료구조(List<int>, Int32List) 사용 가능
   DateTime initArrayStart = DateTime.now();
   dynamic sample = useInt32List? getRandInt32Array(sampleSize, 10000) : getRandList(sampleSize, 10000);
   DateTime initArrayEnd = DateTime.now();
 
-  if (printArray && sampleSize < 50)    // printArray: true라도, 50개가 넘는 길이는 출력하지 않도록 강제한다.
+  if (printArray && sampleSize < 50)    // printArray: true라도, 50개가 넘는 길이는 출력하지 않도록 강제
     print(sample);
   DateTime start = DateTime.now();
   sort(sample, sf);
@@ -133,6 +153,54 @@ void quick(var arr, int start, int end) {
   if (right < end) quick(arr, start, right);
   if (left > start) quick(arr, left, end);
 
+}
+
+
+void _merge(var arr, int start, int end, var bf) {
+  // 코어함수
+
+  // 조기종료 기저조건
+  int size = end - start + 1;
+  if (start >= end) return;
+  if (size <= 1) return;
+  if (size <= 64) {
+    insertion(arr, start, end);
+    return;
+  }
+
+  // 분할 경계 설정
+  int halfSize = (size / 2).toInt();
+
+  int leftStart = start;
+  int leftEnd = leftStart + halfSize - 1;
+
+  int rightStart = leftEnd + 1;
+  int rightEnd = end;
+
+  // 정복
+  _merge(arr, leftStart, leftEnd, bf);
+  _merge(arr, rightStart, rightEnd, bf);
+
+  // 병합
+  int bfStart = start;
+  while (leftStart <= leftEnd && rightStart <= rightEnd) {
+    if (arr[leftStart] < arr[rightStart])   bf[bfStart++] = arr[leftStart++];
+    else                                    bf[bfStart++] = arr[rightStart++];
+  }
+
+  // 둘중에 먼저 소진된 쪽 병합
+  while (leftStart <= leftEnd)              bf[bfStart++] = arr[leftStart++];
+  while (rightStart <= rightEnd)            bf[bfStart++] = arr[rightStart++];
+  
+  // 버퍼->원본 덮어쓰기(인덱스 설정 주의)
+  arr.setRange(start, end + 1, bf, start);
+} 
+
+
+void merge(var arr, int start, int end) {
+  // 점화함수
+  dynamic bf = arr.sublist(0, arr.length);    //? 동적타입에 0으로 할당하는 법을 몰라 일단 복사(둘이 초기화 방식이 다름)
+  _merge(arr, start, end, bf);
 }
 
 
