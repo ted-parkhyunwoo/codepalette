@@ -2,13 +2,10 @@
 #include <vector>
 #include <algorithm>
 
-/*  DESC:
+/*  
+    DESC:
         cpp를 최대한 활용하며, STL Container(가능하면 std::vector)와 제네릭을 구현.
         오름차순/내림차순 선택 가능
-
-    TODO:
-        merge 구현
-
 */ 
 
 typedef unsigned uint;
@@ -19,13 +16,12 @@ using std::string;
 
 // 단순 컨테이너 출력용
 template <typename C>   void printVector(const C& v);
-template <typename T>   bool condition(const T& a, const T& b, bool ascending = true);    // ascending = true: 오름차순(default arg), a > b  -> true
-template <typename C>   void printValidateSort(void(*sort)(C&, bool));      // std::sort와 정렬함수를 비교하여 신뢰검사
+template <typename T>   bool condition(const T& a, const T& b, bool ascending = true);  // ascending = true: 오름차순(default arg), a > b  -> true
+template <typename C>   void printValidateSort(void(*sort)(C&, bool));                  // std::sort와 정렬함수를 비교하여 신뢰검사
 bool condition(const string& a, const string&b, bool ascending = true);     // 문자열 사전정렬용 불리언(사실 std::string 은 > 혹은 < 연산자가 이미 구현되어있음)
 vector<int> getRandIntVec(const int size, const int max);                   // 정수형 벡터 무작위배열 리턴
-void bench(void (*sorting)(vector<int>&, bool), const int size);                  // 정렬시간측정(정수형 무작위 배열)
-void bench(const int size);                                                       // 기본정렬 사용(std::sort)
-
+void bench(void (*sorting)(vector<int>&, bool), const int size);            // 정렬시간측정(정수형 무작위 배열)
+void bench(const int size);                                                 // 기본정렬 사용(std::sort) 오버로딩
 
 // 정렬
 template <typename C>   void bubble (C& v, bool ascending = true);
@@ -36,47 +32,49 @@ template <typename C>   void quick  (C& v, bool ascending = true);
 template <typename C>   void merge  (C& v, bool ascending = true);
 
 
-
+//! MAIN
 int main() {
     srand(time(NULL));
 
+    // 기본정렬 육안검증
+    {   
+        // 정수형 vector
+        vector<int> a = {8, 4, 2, 5, 1, 7, 0, 3, 9, 6};
+        merge(a);
+        printVector(a);
 
-    // 정수형 vector
-    vector<int> a = {8, 4, 2, 5, 1, 7, 0, 3, 9, 6};
-    bubble(a);
-    // _insert(a, 0, 4, true);
-    printVector(a);
-    
-
-    // 문자열 vector
-    vector<string> b = {"a", "b", "aa", "cba", "bba"};
-    bubble(b, false);
-    printVector(b);
+        // 문자열 vector
+        vector<string> b = {"a", "b", "aa", "cba", "bba"};
+        merge(b, false);
+        printVector(b);
+    }
 
 
     // 무작위배열 성능검증
     {
         cout << "\n---benchmark---\n";
         void (*funcs[])(vector<int>& v, bool) = {
-            bubble, select, insert, shell, quick, //merge
+            bubble, select, insert, shell, quick, merge
         };
+
         // 정렬신뢰검사
         cout << "정렬검증중...\n";
-        for (auto& f : funcs) {
-            printValidateSort(f);
-        }
+        for (auto& f : funcs)       printValidateSort(f);
+
         // 벤치마크
         cout << "시간측정중...\n";
-        for (auto& f : funcs)
-            bench(f, 100000);
+        for (auto& f : funcs)       bench(f, 100000);
         cout << "---완료!---\n";
     }
 
 
     // 고성능 테스트
-    int LargeSize = 100000000;
-    bench(quick, LargeSize);
-    bench(LargeSize);
+    {
+        int LargeSize = 100000000;
+        bench(quick, LargeSize);
+        bench(merge, LargeSize);
+        bench(LargeSize);           // 기본정렬 std::sort()
+    }
 
 
     return 0;
@@ -256,4 +254,40 @@ void quick(C& v, bool ascending) {
 
 
 template <typename C>
-void merge  (C& v, bool ascending) {}
+void _merge  (C& v, int start, int end, C& bf, bool ascending) {
+    int size = end - start + 1;
+    if (start >= end) return;
+    if (size <= 1) return;
+    if (size <= 64) {
+        _insert(v, start, end, ascending);
+        return;
+    }
+
+    int halfSize = size / 2;
+    int leftStart = start;
+    int leftEnd = leftStart + halfSize - 1;
+    int rightStart = leftEnd + 1;
+    int rightEnd = end;
+
+    _merge(v, leftStart, leftEnd, bf, ascending);
+    _merge(v, rightStart, rightEnd, bf, ascending);
+
+    int bfStart = start;
+    while (leftStart <= leftEnd && rightStart <= rightEnd) {
+        bool cond = ascending? v[leftStart] < v[rightStart] : v[leftStart] > v[rightStart];
+        if (cond)                  bf[bfStart++] = v[leftStart++];
+        else                            bf[bfStart++] = v[rightStart++];
+    }
+
+    while (leftStart <= leftEnd)        bf[bfStart++] = v[leftStart++];
+    while (rightStart <= rightEnd)      bf[bfStart++] = v[rightStart++];
+    
+    for (int i = start; i <= end; ++i)  v[i] = bf[i];
+    
+}
+
+template <typename C>
+void merge  (C& v, bool ascending) {
+    C bf(v.size());
+    _merge(v, 0, v.size() - 1, bf, ascending);
+}

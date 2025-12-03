@@ -15,12 +15,12 @@ sortPtr :   2.7 ~ 2.9초                             모든 정렬 포인터 적
 언어        직접구현 quick시간                      기본정렬(사용방법)                      시간            비고
 c:          2.7 ~ 2.8                               qsort(배열, 크기, 자료형size, 비교함수) 8.4             병합 3.9   
 cpp(ptr):   2.7 ~ 2.9                               std::sort(it(ptr) begin, it(ptr) end)   2.9 ~ 3.0       병합 3.9
-cpp(vector):3.2 ~ 3.3                               위와 동일                               3.0             구현중
+cpp(vector):3.2 ~ 3.3                               위와 동일                               3.0             병합 4.3
 java:       3.6 ~ 3.8                               java.util.Arrays.sort(arrayObject)      3.6 ~ 3.7       sbMerge 5.7 ~ 7.3
 js:         5.4                                     array.sort((a, b) => a - b);            16.7            병합 11.8           (java버전과 동일하게 컨버팅)
 python:     150 ~ 160                               list.sort()                             10.3            병합 490(3회평균)   (개선필요)
-
-
+dart_aot:   21                                      list.sort()                             16.6            병합 37 ~ 39        새로추가됨
+dart_jit:   3.8                                     list.sort()                             10.5            병합 5.9            (순서 뒤바뀐거 아님. aot가 jit보다 느리게 측정됨)
 
 
 참고: 컴파일 -O3 가 모든 정렬에 성능향상이 있다고 할수는 없음.

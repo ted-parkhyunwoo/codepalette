@@ -22,6 +22,7 @@ import 'dart:typed_data';
 
 void main(List<String> args) {
 
+  sortBench(dartsort, 100_000_000, useInt32List: true);
   sortBench(merge, 100_000_000, useInt32List: true);
   sortBench(quick, 100_000_000, useInt32List: true);
   // sortBench(merge, 20, useInt32List: true, printArray: true);
@@ -55,6 +56,12 @@ void sortRange(var arr, int start, int end, sortfunc sf) {
 }
 void sort(var arr, sortfunc sf) {
   sortRange(arr, 0, arr.length - 1, sf);
+}
+
+
+// 기본 정렬 sort()를 sortfunc로 사용할 수 있도록 랩핑
+void dartsort(var arr, int start, int end) {
+  arr.sort();
 }
 
 

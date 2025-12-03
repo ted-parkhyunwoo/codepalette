@@ -27,16 +27,6 @@ def sort_insert(l:list, ascending:bool) -> None:
         bf:int = l[i]
         j:int = i
 
-        ## for문버전은 j = k - 1이 관건. c처럼 for문 내 조건(j혹은 k가 증감 하기 전 평가)이 range로 뿌리는거랑 다르다는 점을 인지.
-        # for k in range(i, 0, -1):
-        #     cond:bool = l[k - 1] > bf if ascending else l[k - 1] < bf
-        #     if cond:
-        #         l[k] = l[k - 1]
-        #         j = k - 1
-        #     else: break
-        # if j != i:
-        #     l[j] = bf
-
         while j > 0 and (l[j - 1] > bf if ascending else l[j - 1] < bf):
             l[j] = l[j - 1]
             j -= 1
@@ -75,7 +65,6 @@ def _sort_insert(l:list, start:int, end:int, ascending:bool) -> None:
 
 def _quick(l:list, start:int, end:int, ascending:bool) -> None:
     if (len(l) <= 1): return
-    #! TEST 정렬전환
     if (end - start < 512):
         _sort_insert(l, start, end, ascending)
         return
@@ -166,7 +155,7 @@ def time_check_compare(sort1, sort2, size:int, max:int, loop:int,  printTask:boo
         arr_cp = list(arr)
         f2_start = time.perf_counter()
         sort2(arr_cp, True)
-        # arr_cp.sort()     # 내장 기본 정렬 사용시 sort2주석처리 후 사용 : C 보다 빠름
+        # arr_cp.sort()     # 내장 기본 정렬 사용시 sort2주석처리 후 사용
         f2_res = time.perf_counter() - f2_start
         f1_sum += f1_res
         f2_sum += f2_res
@@ -205,6 +194,7 @@ def printSortCorrectly(func, size:int = 10000):
     print(f"{'오름차순' if asc else '내림차순'}: {'성공!' if res else '실패'} 소요시간: {restime}")    
 
 
+#! MAIN
 def main() :    
     tests = [
         False, False, True, False
@@ -247,12 +237,12 @@ def main() :
 
     # 단일 시간측정
     if tests[2]:
-        bench_sort = sort_merge
-        single_bench_sample = get_random_int_list(100000000, 10000)
+        bench_sort = sort_quick
+        single_bench_sample = get_random_int_list(100_000_000, 10000)
         print("샘플생성완료. 정렬중...")
         start = time.perf_counter()
         
-        bench_sort(single_bench_sample, True)
+        bench_sort(single_bench_sample, True)   # bench_sort로 선언한 정렬로 측정
         # single_bench_sample.sort()            # 기본정렬로 측정
 
         print(time.perf_counter() - start)

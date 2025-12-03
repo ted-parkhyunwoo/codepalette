@@ -47,7 +47,7 @@ int main() {
     bool test[5] = {
 
         // 1.정렬 출력,  2.랜덤샘플 정렬출력,  3.정렬검증,  4.속도측정(기본),  5.속도측정(고성능)
-        false, false, false, true, true
+        false, false, false, false, true
 
     };
 
