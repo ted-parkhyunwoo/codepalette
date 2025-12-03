@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:io';
 
 // dart 설치: flutter SDK 설치시 포함.
@@ -121,6 +122,33 @@ void main(List<String> args) {  // main함수의 관용표현.
   print(myArray);
 
   myArray = [1, 2, 3];                  // 덮어쓰기
+
+  // 배열복사(setRange: 반복자기반, 자료형이 달라도 허용, sublist: 인덱스기반복사. 자료구조 다르면 사용안됨)
+  print("\n배열복사: ");
+  
+  List<int> copyArray = List.filled(myArray.length, 0);       // 공간확보(이후 크기 변경불가) 안하면 복사 범위 예외발생
+  copyArray.setRange(0, myArray.length, myArray);           
+
+  List<int> copyArray1 = [0, 0, 0];                           // 혹은 공간 미리 확보 (copyArray1.length 를 바꿔도 런타임 범위 예외발생)
+  copyArray1.setRange(0, myArray.length, myArray);      
+
+  List<int> copyArray2 = myArray.sublist(0, myArray.length);  // 자료구조 + 인덱스카피 방식
+  // Int32List copyArray3 = myArray.sublist(0, myArray.length);   // 오류: 자료구조 다름. 형변환 실패
+
+  Int32List copyArray4 = Int32List(myArray.length);           // Int32List객체는 전통배열과 유사하여 객체 선언과 동시에 크기 할당.
+  copyArray4.setRange(0, myArray.length, myArray);            // 반복자 방식이라 다른 자료구조에도 잘 들어감.
+
+  Int32List copyArray5 = copyArray4.sublist(0, copyArray4.length);  // 성공: 자료구조 같음
+
+  
+  print(myArray);
+  print(copyArray);
+  print(copyArray1);
+  print(copyArray2);
+  // print(copyArray3);
+  print(copyArray4);
+  print(copyArray5);
+  
 
 
   // 반복문
