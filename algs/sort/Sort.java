@@ -10,7 +10,78 @@ import java.util.Map;
 
 
 class Sort {
-    // ---- HELPER: 가독성을 위해 함수를 모두 축소시키는 것을 추천.  ----
+
+    //! MAIN
+
+    public static void main(String[] args) {
+        
+        boolean[] test = { 
+            // 테스트 실행 스위치. 필요한 것만 최소로 골라 실행할 수록 측정결과가 좋게 나오는 경향이 있음(특히 sbMerge)
+            true, true, true, true 
+        };
+
+
+        // 1. 출력 육안확인
+        if (test[0]) { 
+            System.out.println("\n--- 1. print sorted ---");
+            int[] sample = getRandArr(10, 100);
+            print(sample);
+            sbMerge(sample, true);
+            print(sample);
+            sbMerge(sample, false);
+            print(sample);
+        }
+
+        // 2. 정렬 신뢰성 검증 (비교정렬은 isCorrectlySorted 내부에서 java.util.Arrays.sort() 를 사용함)
+        if (test[1]) {
+            System.out.println("\n--- 2. validate the sort ---");
+            BiConsumer<int[], Boolean> sortAlg = Sort::     sbMerge;      // 변경가능
+
+            int sampleSize = 30000;
+            int[] sample = getRandArr(sampleSize, 10000);
+            int[] cpSample = sample.clone();
+
+            sortAlg.accept(sample, true);                                           // 정렬진행
+            boolean res = isCorrectlySorted(sample, cpSample, true);     // 비교정렬 진행후 결과산출
+            System.out.println(String.format("[오름차순 %s]: 길이 %d 배열", res?"성공":"실패", sampleSize));
+            
+            if (res) {  // 오름차순이 성공하면 진행됨. 샘플 오염된 채로 그대로 다시 사용(개선할 필요 없음. 어차피 재정렬)
+                sortAlg.accept(sample, false);
+                res = isCorrectlySorted(sample, cpSample, false);
+                System.out.println(String.format("[내림차순 %s]: 길이 %d 배열", res?"성공":"실패", sampleSize));
+            }
+        }
+
+        // 3. 기본 벤치마크
+        if (test[2]) {
+            System.out.println("\n--- 3. benchmark sorting ---");
+            int[] sample = getRandArr(30000, 10000);
+            Map<String, BiConsumer<int[], Boolean>> sortAlgs = new LinkedHashMap<>();
+            sortAlgs.put("bubble", Sort::bubble);
+            sortAlgs.put("select", Sort::select);
+            sortAlgs.put("insert", Sort::insert);
+            sortAlgs.put("shell", Sort::shell);
+            sortAlgs.put("merge", Sort::merge);
+            sortAlgs.put("quick", Sort::quick);
+            sortAlgs.put("sbMerge", Sort::sbMerge);
+
+            for (String key : sortAlgs.keySet()) {
+                doTest(sample, sortAlgs.get(key), key);
+            }
+        }
+
+        // 4. 고부하 정렬 벤치마크
+        if (test[3]) {
+            System.out.println("\n--- 4. High Perfomance Sort ---");
+            int[] sample = getRandArr(100000000, 10000);
+            doTest(sample, Sort::merge, "merge");
+            doTest(sample, Sort::sbMerge, "sbMerge");
+            doTest(sample, Sort::quick, "quick");
+            doTest(sample, Sort::javaSort, "javaSort");
+        }
+    }
+
+    // ---- HELPER  ----
 
     public static void print(int[] arr) {
         System.out.print("[ ");
@@ -250,92 +321,23 @@ class Sort {
         _sbMerge(arr, 0, sz - 1, bf, ascending);
     }
 
-    // 속도비교를 위한 기본 Arrays의 정렬
+    
+    // 속도비교를 위한 기본 Arrays의 정렬 wrapper.
     public static void javaSort(int[] arr, boolean ascending) {
         java.util.Arrays.sort(arr);
 
-        // 억지로 구현한 내림차순. 작동은 되나 가능하면 리펙토링 필요
+        // 억지로 구현한 내림차순. 작동은 되나 복사 뒤집기 오버헤드가 있음.
         if (!ascending) {
             int arrSize = arr.length;
             int[] cp = new int[arrSize];
-            for (int i = 0; i < arrSize; ++i) {
+
+            for (int i = 0; i < arrSize; ++i)
                 cp[i] = arr[arrSize - i - 1];
-            }
             
-            for (int i = 0; i < arrSize; ++i) {
+            for (int i = 0; i < arrSize; ++i) 
                 arr[i] = cp[i];
-            }
-
         }
     }
 
-    //! MAIN
-
-    public static void main(String[] args) {
-        
-        boolean[] test = { 
-            // 테스트 실행 스위치. 필요한 것만 최소로 골라 실행할 수록 측정결과가 좋게 나오는 경향이 있음(특히 sbMerge)
-            true, true, true, true 
-        };
-
-        // 1. 출력 육안확인
-        if (test[0]) { 
-            System.out.println("\n--- 1. print sorted ---");
-            int[] sample = getRandArr(10, 100);
-            print(sample);
-            sbMerge(sample, true);
-            print(sample);
-            sbMerge(sample, false);
-            print(sample);
-        }
-
-        // 2. 정렬 신뢰성 검증 (비교정렬은 isCorrectlySorted 내부에서 java.util.Arrays.sort() 를 사용함)
-        if (test[1]) {
-            System.out.println("\n--- 2. validate the sort ---");
-            BiConsumer<int[], Boolean> sortAlg = Sort::     sbMerge;      // 변경가능
-
-            int sampleSize = 30000;
-            int[] sample = getRandArr(sampleSize, 10000);
-            int[] cpSample = sample.clone();
-
-            sortAlg.accept(sample, true);                                           // 정렬진행
-            boolean res = isCorrectlySorted(sample, cpSample, true);     // 비교정렬 진행후 결과산출
-            System.out.println(String.format("[오름차순 %s]: 길이 %d 배열", res?"성공":"실패", sampleSize));
-            
-            if (res) {  // 오름차순이 성공하면 진행됨. 샘플 오염된 채로 그대로 다시 사용(개선할 필요 없음. 어차피 재정렬)
-                sortAlg.accept(sample, false);
-                res = isCorrectlySorted(sample, cpSample, false);
-                System.out.println(String.format("[내림차순 %s]: 길이 %d 배열", res?"성공":"실패", sampleSize));
-            }
-        }
-
-        // 3. 기본 벤치마크
-        if (test[2]) {
-            System.out.println("\n--- 3. benchmark sorting ---");
-            int[] sample = getRandArr(30000, 10000);
-            Map<String, BiConsumer<int[], Boolean>> sortAlgs = new LinkedHashMap<>();
-            sortAlgs.put("bubble", Sort::bubble);
-            sortAlgs.put("select", Sort::select);
-            sortAlgs.put("insert", Sort::insert);
-            sortAlgs.put("shell", Sort::shell);
-            sortAlgs.put("merge", Sort::merge);
-            sortAlgs.put("quick", Sort::quick);
-            sortAlgs.put("sbMerge", Sort::sbMerge);
-
-            for (String key : sortAlgs.keySet()) {
-                doTest(sample, sortAlgs.get(key), key);
-            }
-        }
-
-        // 4. 고부하 정렬 벤치마크
-        if (test[3]) {
-            System.out.println("\n--- 4. High Perfomance Sort ---");
-            int[] sample = getRandArr(100000000, 10000);
-            doTest(sample, Sort::merge, "merge");
-            doTest(sample, Sort::sbMerge, "sbMerge");
-            doTest(sample, Sort::quick, "quick");
-            doTest(sample, Sort::javaSort, "javaSort");
-        }
-    }
 }
 

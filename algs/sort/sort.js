@@ -164,6 +164,7 @@ const getRandIntArray = (size, max = 10000) => {
     return res
 }
 
+//! ---- MAIN ----
 const main = () => {
 
     // 출력

@@ -18,6 +18,8 @@ using std::string;
 template <typename C>   void printVector(const C& v);
 template <typename T>   bool condition(const T& a, const T& b, bool ascending = true);  // ascending = true: 오름차순(default arg), a > b  -> true
 template <typename C>   void printValidateSort(void(*sort)(C&, bool));                  // std::sort와 정렬함수를 비교하여 신뢰검사
+
+// helper
 bool condition(const string& a, const string&b, bool ascending = true);     // 문자열 사전정렬용 불리언(사실 std::string 은 > 혹은 < 연산자가 이미 구현되어있음)
 vector<int> getRandIntVec(const int size, const int max);                   // 정수형 벡터 무작위배열 리턴
 void bench(void (*sorting)(vector<int>&, bool), const int size);            // 정렬시간측정(정수형 무작위 배열)
