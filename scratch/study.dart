@@ -63,6 +63,12 @@ void main(List<String> args) {  // main함수의 관용표현.
   print((binTen ^ binFifteen).toRadixString(2));    // 1010 ^ 1111 = 0101
   print(binTen << 1);   // 101010 = 20;
 
+  // 동적 타입: var는 추론이라 선언된 이후로 타입변경 불가, dynamic은 여러 자료형을 담을 수 있음.
+  print("dynamic type: ");
+  dynamic myDinamic = "string";
+  print(myDinamic.runtimeType);
+  myDinamic = 3;
+  print(myDinamic.runtimeType);
 
 
   // 배열: int[] 나 int val[] 등은 없음.
@@ -159,4 +165,26 @@ void main(List<String> args) {  // main함수의 관용표현.
   print(t.a);
   print(t.b);
   print(t.getHello());
+
+  // Map
+  Map<int, String> myMap = {};
+  myMap[0] = "Hello";   //추가
+  myMap[1] = "Dart";    
+  myMap[1] = "World";   //수정
+  myMap.remove(1);      //삭제
+  myMap.addAll({5: "a", 6: "b"});   // 모두추가
+  print(myMap);
+
+  // map 요소순회
+
+  // keys 를 이용한 for - in
+  for (var key in myMap.keys) {
+    print(myMap[key]);
+  }
+
+  // 내장 foreach
+  myMap.forEach((k, v) {
+    print("key: ${k}\tval:${v}");
+  });
+
 }
