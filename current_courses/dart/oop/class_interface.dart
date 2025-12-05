@@ -2,32 +2,37 @@
 void main(List<String> args) {
 
   print("----인터페이스,구현체 테스트----");
-  MyInterface interfaceClass = MyImplementClass();
+  MyInterface interfaceClass = MyImplementClass("ted");
   interfaceClass.sayHello();
   interfaceClass.sayBye();
+  interfaceClass.sayName();
 
-
-  // 다른 언어에서는 안되는데 이상함. 같은 파일 내에서만 사용가능 추정(다른파일이 아닌 다른 패키지로 import시 사용 불가로 추정)
-  MyInterface interfaceClass2 = MyInterface();
-  interfaceClass2.sayHello();
-  interfaceClass2.sayBye();
+  // 사용가능.
+  MyInterface test = MyImplementClass("park");
+  test.sayName();
 }
 
-
-
-
-// 맘대로작성됨. 
-
-interface class MyInterface{
-  void sayHello() { print("NULL"); }
-  void sayBye() { print("NULL"); }
+// interface 키워드 사용은 되나, abstract로 선언해야 객체선언을 막음.(실질적인 인터페이스 느낌)
+abstract class MyInterface {
+  final String name;
+  MyInterface(this.name);
+  void sayHello() {}
+  void sayBye() {}
+  void sayName() {}
 }
 
+// 구현체: implements
 class MyImplementClass implements MyInterface {
+  final String name;
+  MyImplementClass(this.name);
+
   void sayHello() {
     print("hi");
   }
   void sayBye() {
     print("bye");
+  }
+  void sayName() {
+    print("My Name is ${this.name}");
   }
 }
