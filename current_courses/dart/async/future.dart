@@ -4,7 +4,13 @@ void main(List<String> args) async {
   Future<int> num = Future.value(1);
   Future str = Future.value("Hello");
 
-  str.then((s){print("s완료: ${s}");});   // .then은 자료가 들어오면 실행할 체이닝
+  // 변수사용- then 콜백
+  str.then((s){print("s완료: ${s}");});   // .then은 자료가 들어오면 실행할 체이닝이며 콜백매개변수로 값을 담음
+  // 변수사용- await
+  int numVar = await num;
+  String strVar = await str;
+  print(numVar);
+  print(strVar);
 
   // Future 콜백: 다른연산부터 실행해버림 (start, end출력 -> res출력)
   addNum(1, 2);
