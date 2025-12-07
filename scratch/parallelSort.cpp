@@ -23,12 +23,13 @@ template <typename T> void printParallelDebug(std::vector<T>& v);       // 쓰�
 int main() {
     srand(time(NULL) ^ getpid());
 
+    // string sort test
     vector<string> strSample = {"f", "d", "a", "e", "c", "asuh", "weu", "A", "d", "aflsdjfe", "ioo", "fiow", "394uef", "48934a", "9efj100", "IAY(D)", "!@#*(@!)"};
     printVec(strSample);
     parallel<string>(strSample.begin(), strSample.end());
     printVec(strSample);
 
-
+    // random int sort test
     int sampleSize = 1000000000;
     vector<int> sample = getRandIntVec(sampleSize, 10000);
     auto start = std::chrono::steady_clock::now();
@@ -160,18 +161,15 @@ template <typename T> void parallel(Iter<T> start, Iter<T> end) {
         return;
     }
 
-    void (*sort)(Iter<T>, Iter<T>) = quick<T>;
-
     // chunk 분배는 현재 마지막 쓰레드가 나머지를 다 물려받는 형태 -> 1개씩 더 물려받고, 모자란만큼은 덜 받는게 더 적절하나, 12쓰레드로 치면 고작 11개 늘어나는것이라 무시해도 됨.
     const size_t chunk = (sz / THREADS);
     vector<thread> tasks(THREADS);
     Iter<T> it = start;
     
-
     for (int i = 0; i < THREADS - 1; ++i, it += chunk)
-        tasks.at(i) = thread(sort, it, it + chunk);
+        tasks.at(i) = thread(quick<T>, it, it + chunk);
 
-    tasks.at(THREADS - 1) = thread(sort, it, end);      // 초과분
+    tasks.at(THREADS - 1) = thread(quick<T>, it, end);      // 초과분
 
     for (thread& task: tasks)                           // 회수
         if (task.joinable()) task.join();
