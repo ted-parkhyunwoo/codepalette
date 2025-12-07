@@ -1,11 +1,9 @@
 #include <thread>
-#include <vector>
 #include <cstdio>
 #include <ctime>
 #include <cstring>
 #include <algorithm>            // 일부환경에서는 다음 두 헤더가 선언되어야함 (std::is_sorted, memcpy)
-#include <iostream>
-
+#include <unistd.h>             // getpid() 용. 랜덤 시드에 ^연산 적용중
 
 /* DESC:
     sort functions:
@@ -75,16 +73,41 @@ void benchmarkSort  (sortFunction sort, const unsigned sampleSize = 1000000, con
 
 //! ---- MAIN ----
 int main() {
-    srand(time(NULL));
-    printf("%zu\n", sizeof(unsigned));
+    srand(time(NULL) ^ getpid());
 
-    // instance sample test: 프로토타입에 선언된 기본매개변수를 따르며, sample에 대한 할당 해제에 걱정할 필요 없이 사용해도 됨.
-    benchmarkSort(quick);
+    // ---- 정렬 사용 예제 ----
+    if (false) {
+        int testArr[] = { 5, 2, 3, 1, 4 };          // 샘플
+        select(testArr, testArr + 5);               // 정렬
+        printIntArr(testArr, testArr + 5);          // 출력
 
-    // find Threshold: 정렬방법, 임계값(참조), 실험횟수
-    findOptimalThreshold(parallel, &QUICK_MIN_SIZE, 5);
+        int testArr2[] = { 5, 2, 3, 1, 4 };
+        insert(testArr2 + 1, testArr2 + 4);         // 부분정렬. 1번 인덱스부터  4번 인덱스 전까지(3번인덱스 까지)
+        printIntArr(testArr2, testArr2 + 5);
+    }
+  
 
-    
+    // ---- Test, 헬퍼 사용예제 ----
+    if (false) {
+        // Test and Benchmark 사용 예제
+        isSortedCorrect(bubble);
+        isSortedCorrect(quick, 100000);         // 테스트배열 크기 지정 가능(quick,merge,parallel 같은 insertion전환 임계값 있는 경우에 유용)
+        benchmarkSort(quick);
+        benchmarkSort(quick, 100000);           // 사이즈 지정 가능(샘플 비워두면 자동생성/해제됨)
+
+        {   
+            // 사용자 정의 sample 사용 예제
+            auto sz = 10000000;
+            auto sample = getRandomIntArr(sz, 10000);      // 사용후 반드시 할당 해제해야함.
+            benchmarkSort(quick, sz, sample);   // 샘플 지정 가능
+            delete[] sample;
+        }
+
+        // findOptimalThreshold(parallel, &QUICK_MIN_SIZE, 3);     // args: 정렬방법, 임계값(참조), 실험횟수,  오래걸림.
+    }
+
+
+    // ---- 정렬 측정 ----
     // 테스트 실행 트리거: 정렬검증, 일반 시간측정, 고성능 시간측정, 쓰레드 사용 병렬 측정
     const bool test[] = {
         true, true, true, true
@@ -406,26 +429,29 @@ void merge(int* start, int* end) {
 
 // 쓰레드를 나누어 sortFunc로 병렬처리
 void parallel(int* start, int* end) {
-    sortFunction sort = quick;     // 정렬방법. 변경가능
-    size_t size = end - start;
+    const sortFunction sort = quick;        // 정렬방법. 변경가능
+    const size_t size = end - start;        // 전체 사이즈 
+    const unsigned num_threads = std::thread::hardware_concurrency();       // 사용가능한 cpu의 쓰레드 계산
 
-    unsigned num_threads = std::thread::hardware_concurrency();
-
-    if (size <= 1 || num_threads == 1) {    // 싱글로 진행할 예외처리
+    if (size <= 1 || num_threads == 1) {    // 싱글로 진행할 예외처리. 정렬할 필요가 없거나 싱글테스트 일 경우 그냥 sort실행
         sort(start, end);
         return;
     }
 
-    std::vector<std::thread> threads;
-    size_t chunk = (size + num_threads - 1) / num_threads;     // 전체사이즈에서 쓰레드 나눈만큼 작업분배
-    auto worker = [sort](int* start, int* end) { sort(start, end); };
+    std::thread* threads = new std::thread[num_threads];            // 쓰레드 배열(각 worker가 할당되며 join으로 회수될 계획) 할당
+    const unsigned chunk = (size + num_threads - 1) / num_threads;  // 전체사이즈에서 쓰레드 나눈만큼 작업분배
 
     for (unsigned t = 0; t < num_threads; ++t) {
         int* th_start = start + t * chunk;
         int* th_end = (t == num_threads - 1) ? end : th_start + chunk;
-        threads.emplace_back(worker, th_start, th_end);
+        threads[t] = std::thread(sort, th_start, th_end);     // 이동생성자 활용됨. th_start, th_end 범위별 쓰레드 분배
     }
-    for (auto& th : threads) th.join();
+
+    for (unsigned t = 0; t < num_threads; ++t) 
+        threads[t].join();                                      // join은 미래 값이 다 나올 때까지 await 되고 쓰레드 회수됨
+    
+
+    // 현재까진 쓰레드별로 구획을 나누어서 정렬했을 뿐, merge의 병합방식처럼 조건부로 다시 병합하여야함
 
     // 병합과정. inplace_merge를 싱글버퍼(merge에서 사용한 방법)로 개선하면 더 빨라지지만 메모리 오버헤드 증가. 
     size_t offset = chunk;
@@ -434,11 +460,13 @@ void parallel(int* start, int* end) {
         while (left + offset < size) {
             size_t mid = left + offset;
             size_t right = std::min(left + 2 * offset, size);
-            std::inplace_merge(start + left, start + mid, start + right);
+            std::inplace_merge(start + left, start + mid, start + right);       // 자료간 이동만 하므로, 메모리공간 추가 할당이 없는 방식임.대신 조금 느림.
             left += 2 * offset;
         }
         offset *= 2;
     }
+
+    delete[] threads;
 }
 
 
