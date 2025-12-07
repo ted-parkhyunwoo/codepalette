@@ -3,6 +3,7 @@ package third;
 // operator
 
 public class Main {
+    @SuppressWarnings("unused")
     public static void main(String[] args) {
 
         // 단항: 증감연산

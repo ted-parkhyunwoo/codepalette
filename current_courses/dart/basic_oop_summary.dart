@@ -1,4 +1,6 @@
 // 라이브러리 호출
+// ignore_for_file: unused_local_variable, unnecessary_type_check
+
 import 'dart:ffi';
 import 'dart:math';
 import 'dart:io';

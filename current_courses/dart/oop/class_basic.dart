@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 void main(List<String> args) {
 
   Idol blackpink = Idol("블랙핑크", ["지수", "제니", "리사", "로제"]);    // new를 붙여도 되고 안붙여도 됨. dart는 자유
