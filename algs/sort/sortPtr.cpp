@@ -7,24 +7,13 @@
 #include <iostream>
 
 
-//! 임계값 사용할지 여부. QUICK_MIN_SIZE 혹은 MERGE_MIN_SIZE 값에 따라 샘플배열 크기가 작으면 오리지날 퀵, 병합정렬이 실행되지 아니할 수 있음
-int USE_THRESHOLD = 1;
-int QUICK_MIN_SIZE = USE_THRESHOLD ? 128 : 0;       // insertion sort로 전환될 배열크기 임계값 상수
-int MERGE_MIN_SIZE = USE_THRESHOLD ? 64 : 0;
-
-
-constexpr int INT_SIZE = sizeof(int);
-
-using sortFunction = void(*)(int*, int*);           // 함수포인터(정렬)을 sortFunction이란 타입으로 사용.
-
-
 /* DESC:
-    data type:  모든 정렬은 정수형 데이터만 사용하며, 모두 오름차순 정렬됨
-                배열의 자료형은 정수형 배열을 사용함
-    parameter:  정렬함수 파라미터는 모두 정수형 포인터를 사용하며, 정수형 배열 주소포인터로 다루어짐.
-    args:       반복자처럼 start는 배열의 시작을, end는 배열의 마지막 요소 '다음'을 가리킴
-    return:     정렬함수는 void. 새로운 배열을 리턴하지 않고, 원본배열을 수정함
-    sort:       quick, merge는 임계값(배열길이 128 혹은 64 이하) 도달시 insert정렬로 됨. 따라서 정렬신뢰검사에는 샘플크기를 키워야함 
+    sort functions:
+        data type:  integer배열만 허용. 모두 오름차순 정렬
+        parameter:  모두 정수형 포인터를 사용하며, 정수형 배열 주소포인터로 다루어짐
+        args:       반복자처럼 start는 배열 시작, end는 배열의 마지막 요소 '다음'을 가리킴
+        return:     void. 원본배열을 직접 수정
+    
     compile:    -O3 혹은 -Ofast(비권장)로 사용하면, register 키워드 명시 없이도 필요에 따라 최적화됨
                 bubble 의 경우, 이상하게 -O3가 적용되지 않은 편이 훨씬 빠름. (100만개 15초->8~9초)
     기타서술:
@@ -34,9 +23,10 @@ using sortFunction = void(*)(int*, int*);           // 함수포인터(정렬)�
     code structure:
         HEADER                      헤더선언
         descripion comment          코드설명
+        global variable             필요한 전역변수/상수
         definition(PROTOTYPES)      함수선언
         testcodes                   구조화 되기 전 테스트 코드
-        MAIN                        메인함수
+        MAIN                        메인함수- 각종 정렬테스트 검사, 성능측정
         declaration                 함수정의(구현)
     
     functions:
@@ -49,20 +39,15 @@ using sortFunction = void(*)(int*, int*);           // 함수포인터(정렬)�
 */
 
 
-// PROTOTYPES
-
-// Helper
-int* getRandomIntArr(const unsigned size, const int max = 10000);    //! DO NOT FORGET FREE MEMORY   random integer array return.
-void printIntArr(const int* start, const int* end);             // print array use pointer
-inline void swap(int* x, int* y);                               // swap integer data. 인라인 선언
-
-// Test
+// ---- GLOBAL VARS ----
+int USE_THRESHOLD = 1;                              // 임계값 사용할지 여부: 샘플테스트용(insertion 전환을 막기 위해)
+int QUICK_MIN_SIZE = USE_THRESHOLD ? 128 : 0;       // insertion sort로 전환될 배열크기 임계값 상수 (quick, parallelquick 용)
+int MERGE_MIN_SIZE = USE_THRESHOLD ? 64 : 0;        // 병합정렬 전용 임계값
+constexpr int INT_SIZE = sizeof(int);               // sizeof(int) 를 매번 계산하지 않기 위해 컴파일타임에 미리 전역상수화
+using sortFunction = void(*)(int*, int*);           // 함수포인터(정렬)을 sortFunction이란 타입으로 사용.
 
 
-void findOptimalThreshold(sortFunction sort, int* thresholdVar, int sampleCount);     // thresholdVar는 전역 선언된 임계값을 참조해야함.
-void isSortedCorrect(sortFunction sort, const unsigned sampleSize = 13, const bool printArr = false);     // 정렬신뢰검사 
-void benchmarkSort  (sortFunction sort, const int* sample = nullptr, const unsigned sampleSize = 1000000);// 정렬시간측정
-
+// ---- PROTOTYPES ----
 // Sort
 void bubble (int* start, int* end);
 void select (int* start, int* end);
@@ -70,10 +55,20 @@ void insert (int* start, int* end);
 void shell  (int* start, int* end);
 void quick  (int* start, int* end);
 void merge  (int* start, int* end);
-void parallel(int* start, int* end);        // quick 사용중(정의에 sortFunc 로 변경 가능)
+void parallel(int* start, int* end);        // quick 사용중(정의에 sortFunc 로 변경 가능). cpu threads를 모두 사용
+
+// Helper
+int* getRandomIntArr(const unsigned size, const int max = 10000);    //! DO NOT FORGET FREE MEMORY   random integer array return.
+void printIntArr(const int* start, const int* end);             // print array use pointer
+inline void swap(int* x, int* y);                               // swap integer data. 인라인 선언
+
+// Test and Benchmark 
+void findOptimalThreshold(sortFunction sort, int* thresholdVar, int sampleCount);     // thresholdVar is ref QUICK_MIN_SIZE or MERGE_MIN_SIZE.
+void isSortedCorrect(sortFunction sort, const unsigned sampleSize = 13, const bool printArr = false);       // test validate sorting
+void benchmarkSort  (sortFunction sort, const unsigned sampleSize = 1000000, const int* sample = nullptr);  // print sorting time.
 
 
-// test codes: 
+// ---- test codes ---- 
 
 
 
@@ -83,19 +78,19 @@ int main() {
     srand(time(NULL));
     printf("%zu\n", sizeof(unsigned));
 
-    // instance sample test: 샘플 자동해제됨.
-    //benchmarkSort(quick);
+    // instance sample test: 프로토타입에 선언된 기본매개변수를 따르며, sample에 대한 할당 해제에 걱정할 필요 없이 사용해도 됨.
+    benchmarkSort(quick);
 
-    // find Threshold
-    // findOptimalThreshold(parallel, &QUICK_MIN_SIZE, 5);
+    // find Threshold: 정렬방법, 임계값(참조), 실험횟수
+    findOptimalThreshold(parallel, &QUICK_MIN_SIZE, 5);
 
     
-    // 테스트 실행 트리거: 정렬검증, 일반 시간측정, 고성능 시간측정, 쓰레드병렬 측정
+    // 테스트 실행 트리거: 정렬검증, 일반 시간측정, 고성능 시간측정, 쓰레드 사용 병렬 측정
     const bool test[] = {
         true, true, true, true
     };
     
-    // 정렬검증
+    // 정렬검증: 올바르게 정렬되는지 검사
     if (test[0]) {
         printf("\n--- Validate the Sort ---\n");
         const unsigned longSampleSize = 100000;
@@ -108,45 +103,45 @@ int main() {
         printf("threads\t\t");    isSortedCorrect(parallel, longSampleSize);
     }
 
-    // 일반 시간측정
+    // 일반 시간측정: 10만개의 배열을 정렬하여 시간측정
     if (test[1]) {
         printf("\n--- Benchmark Sorting ---\n");
         const unsigned sampleSize = 100000;
         const int* sample = getRandomIntArr(sampleSize);
-        // printf("bubble\t"); benchmarkSort(bubble, sample, sampleSize);       // 버블은 느려서 주석처리
-        printf("select\t"); benchmarkSort(select, sample, sampleSize);
-        printf("insert\t"); benchmarkSort(insert, sample, sampleSize);
-        printf("shell\t");  benchmarkSort(shell, sample, sampleSize);
-        printf("merge\t");  benchmarkSort(merge, sample, sampleSize);
-        printf("quick\t");  benchmarkSort(quick, sample, sampleSize);
-        printf("stdsort\t");benchmarkSort(std::sort, sample, sampleSize);
-        printf("threads\t");benchmarkSort(parallel, sample, sampleSize);
+        // printf("bubble\t"); benchmarkSort(bubble, sampleSize, sample);      // 버블은 느려서 주석처리
+        printf("select\t"); benchmarkSort(select, sampleSize, sample);
+        printf("insert\t"); benchmarkSort(insert, sampleSize, sample);
+        printf("shell\t");  benchmarkSort(shell, sampleSize, sample);
+        printf("merge\t");  benchmarkSort(merge, sampleSize, sample);
+        printf("quick\t");  benchmarkSort(quick, sampleSize, sample);
+        printf("stdsort\t");benchmarkSort(std::sort, sampleSize, sample);
+        printf("threads\t");benchmarkSort(parallel, sampleSize, sample);
         delete[] sample;
     }
 
-    // 고성능 시간측정
+    // 고성능 시간측정: 1억개 정도의 배열 정렬 시간 측정
     if (test[2]) {
         printf("\n--- High Perfomance Sort ---\n");
         const unsigned sampleSize = 100000000;
         const int* sample = getRandomIntArr(sampleSize);
-        printf("merge\t");  benchmarkSort(merge, sample, sampleSize);
-        printf("stdsort\t");benchmarkSort(std::sort, sample, sampleSize);
-        printf("quick\t");  benchmarkSort(quick, sample, sampleSize);
-        printf("threads\t");benchmarkSort(parallel, sample, sampleSize);
+        printf("merge\t");  benchmarkSort(merge, sampleSize, sample);
+        printf("stdsort\t");benchmarkSort(std::sort, sampleSize, sample);
+        printf("quick\t");  benchmarkSort(quick, sampleSize, sample);
+        printf("threads\t");benchmarkSort(parallel, sampleSize, sample);
         delete[] sample;
     }
 
-    // 쓰레드 병렬 단독테스트
+    // 병렬화 정렬(cpu thread 모두 사용) 단독테스트
     if (test[3]) {
         printf("\n--- Parallel Sort ---\n");
-        printf("threads\t");        benchmarkSort(parallel, nullptr, 4000000000);
+        printf("threads\t");        benchmarkSort(parallel, 4000000000);
     }
 
     return 0;
 }
 
 
-// 함수 구현(정의)
+// ---- 함수 구현(정의) ----
 
 //! DO NOT FORGET FREE MEMORY
 int* getRandomIntArr(const unsigned size, const int max) {
@@ -195,7 +190,7 @@ void isSortedCorrect(sortFunction sort, const unsigned sampleSize, const bool pr
     delete[] cp;
 }
 
-void benchmarkSort(sortFunction sort, const int* sample, const unsigned sampleSize) {
+void benchmarkSort(sortFunction sort, const unsigned sampleSize, const int* sample) {
     // sample을 정렬하는데 걸리는 시간 측정하여 출력. 기본값은 샘플 복사.
     printf("\tbenchmark (sample size %zu) :\t", sampleSize);
 
@@ -393,7 +388,7 @@ void _merge(int* start, int* end, int* bf) {
 }
 
 void merge(int* start, int* end) {
-    // 래퍼함수: 하나의 코드로 bf를 매번 할당하면 오버헤드 증가하므로, 래퍼에서 한번만 할당. 정말 낙서장처럼 쓰는 메모리공간.
+    // 래퍼함수: 하나의 코드로 bf를 매번 할당하면 오버헤드 증가하므로, 래퍼에서 한번만 할당. 정말 낙) 서장처럼 쓰는 메모리공간.
     const int sz = end - start;
     int* bf = new int[sz];
     _merge(start, end, bf);
