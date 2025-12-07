@@ -29,13 +29,11 @@ int main() {
     printVec(strSample);
 
 
-    // int sampleSize = 731;
     int sampleSize = 1000000000;
     vector<int> sample = getRandIntVec(sampleSize, 10000);
     auto start = std::chrono::steady_clock::now();
     parallel<int>(sample.begin(), sample.end());
     auto end = std::chrono::steady_clock::now();
-    // printParallelDebug(sample);
     auto diff = end - start;
     auto us = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
     
@@ -170,15 +168,6 @@ template <typename T> void parallel(Iter<T> start, Iter<T> end) {
     Iter<T> it = start;
     
 
-    // 디버그 로그
-    /*
-    std::cout << "CHUNK: " << chunk << std::endl;
-    bool temp = chunk > 0 && (sz % THREADS != 0);                   // TEST: 마지막 쓰레드가 더 많은 배열을 포함한 경우의 불리언
-    size_t temp2 = sz % THREADS;                                    // 초과분. 없으면 0
-    std::cout << (temp? "초과발생: " : "딱떨어짐: ") << temp2 << std::endl;
-    */
-
-
     for (int i = 0; i < THREADS - 1; ++i, it += chunk)
         tasks.at(i) = thread(sort, it, it + chunk);
 
@@ -206,13 +195,6 @@ template <typename T> void parallel(Iter<T> start, Iter<T> end) {
         if (i == THREADS - 1)       ends.at(i) += sz % THREADS;
     }
 
-    // 초기 위치 잘 잡혔는지 출력 테스트
-    /*
-    for (int i = 0; i < begins.size(); ++i) {
-        std::cout << *(begins.at(i)) << " " << *(ends.at(i) - 1) << "\t";
-    }
-    std::cout << std::endl;
-    */
 
     // 반복자들의 요소중 최소값 꺼내서 bf로 할당 (이 행동때문에 사실 2배의 메모리공간이 할당되고 2배의 시간이 걸리는중인것 같음.)
     // 기저조건 트리거들.
