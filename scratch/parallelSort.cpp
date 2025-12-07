@@ -8,7 +8,7 @@ const size_t THREADS = std::thread::hardware_concurrency();
 using std::vector;
 using std::thread;
 using std::string;
-template <typename T> using Iter =  vector<T>::iterator;
+template <typename T> using Iter = typename vector<T>::iterator;
 
 template <typename T> void swap(Iter<T> x, Iter<T> y);
 template <typename T> void insert(Iter<T> start, Iter<T> end);
@@ -196,7 +196,7 @@ template <typename T> void parallel(Iter<T> start, Iter<T> end) {
 
     // 반복자들의 요소중 최소값 꺼내서 bf로 할당 (이 행동때문에 사실 2배의 메모리공간이 할당되고 2배의 시간이 걸리는중인것 같음.)
     // 기저조건 트리거들.
-    bool finished[THREADS] = { false }; // begins가 ends를 가리키면 true로 전환됨.
+    std::vector<char> finished(THREADS, 0);      // begins가 ends를 가리키면 true로 전환됨. vector로 전환.bool로하면 어마어마하게 느려져서 바꿈.
     int minThreadIdx;                   // 최소값 쓰레드 인덱스
 
     // 메인루프
@@ -219,7 +219,7 @@ template <typename T> void parallel(Iter<T> start, Iter<T> end) {
             bfIt++;
             (begins.at(minThreadIdx))++;
             if (begins.at(minThreadIdx) == ends.at(minThreadIdx))
-                finished[minThreadIdx] = true;
+                finished[minThreadIdx] = 1;
         }
 
     }
