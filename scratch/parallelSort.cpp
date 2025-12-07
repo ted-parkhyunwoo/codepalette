@@ -23,6 +23,7 @@ template <typename T> void printParallelDebug(std::vector<T>& v);       // ì“°ë 
 int main() {
     srand(time(NULL) ^ getpid());
 
+    std::cout << "THREAD: " << THREADS << std::endl;
     // string sort test
     vector<string> strSample = {"f", "d", "a", "e", "c", "asuh", "weu", "A", "d", "aflsdjfe", "ioo", "fiow", "394uef", "48934a", "9efj100", "IAY(D)", "!@#*(@!)"};
     printVec(strSample);
