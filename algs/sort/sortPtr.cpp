@@ -453,7 +453,7 @@ void parallel(int* start, int* end) {
 
     // 현재까진 쓰레드별로 구획을 나누어서 정렬했을 뿐, merge의 병합방식처럼 조건부로 다시 병합하여야함
 
-    // 병합과정. inplace_merge를 싱글버퍼(merge에서 사용한 방법)로 개선하면 더 빨라지지만 메모리 오버헤드 증가. 
+    // 병합과정. inplace_merge를 싱글버퍼(merge에서 사용한 방법)로 개선하면 더 빨라지지만 메모리 오버헤드 증가: 거짓. 배열의 크기가 큰 만큼 복사할당등의 시간도 오래걸림.
     size_t offset = chunk;
     while (offset < size) {
         size_t left = 0;
