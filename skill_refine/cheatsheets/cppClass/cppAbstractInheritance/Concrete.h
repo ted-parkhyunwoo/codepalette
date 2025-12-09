@@ -10,7 +10,14 @@ class Concrete: public Abstract {
         // 생성자는 추상클래스를 그대로 호출
         Concrete(int id, std::string name) : Abstract(id), name{name} {}
 
+        // 순수가상함수 구현
         void sayHello() override {
             std::cout << "Hello user " << this->userId <<  ". your name is " << this->name << ".\n";
         }
+        
+        // 가상함수 재정의
+        void sayHi() override {
+            std::cout << "Derived: hi\n";
+        }
+        
 };

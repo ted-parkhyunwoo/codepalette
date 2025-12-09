@@ -10,7 +10,7 @@ int main() {
     // std::cout << test->DAYS << std::endl;        // DAYS 스태틱 상수는 protected 되어 직접접근 불가. (구현체에서만 접근 가능)
     test->sayHello();
 
-    // 혹은 test2(Implements) 인스턴스를 Interface 로 참조
+    // 혹은 test2(Implements) 인스턴스를 Interface 로 참조 (기본/파생 예제처럼 정적캐스팅 할 필요 없이 편하게 test2를 ref할 수 있다.)
     Implements test2 = Implements(4);
     Interface* test3 = &test2;
     test3->sayHello();
