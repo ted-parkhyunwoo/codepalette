@@ -14,7 +14,7 @@ void main(List<String> args) {
   bts.sayHello();
   bts.introduce();
 
-  // getter, setter 적용된 클래스
+  //! getter, setter 적용된 클래스
   Idol2 bp = Idol2("블랙핑크", ["지수", "제니", "리사", "로제"]);
   print(bp.firstMember);
   bp.firstMember = "수지";
@@ -45,7 +45,7 @@ class Idol {
   // const 생성자이면서 관용적으로 자주 쓰는 생성자(초기화) - const 키워드로 생성자를 만들면 인스턴스도 const로 만들 수 있으나, 런타임결정되는 이름,멤버면 사용불가
   const Idol(this.name, this.members); 
 
-  // Named Constructor: 함수 오버로딩을 지원하지 않으므로, .fromList같은 방식을 사용(회피방법: 상속과 오버라이딩, 기본매개변수)
+  //! Named Constructor: 함수 오버로딩을 지원하지 않으므로, .fromList같은 방식을 사용(회피방법: 상속과 오버라이딩, 기본매개변수)
   Idol.fromList(List l) : this.name = l[0], this.members = l[1] {}    
   
   // +@. 팩토리생성자 + 화살표함수
@@ -73,12 +73,12 @@ class Idol2 {
   //! getter setter 사용이 좀 특이함: 전통적인 return, void방식이랑 기능이 동일하나, 뉘앙스 차이라 함. 간단한 멤버변수 변경등 사용. (복잡한건 함수로)
   String get firstMember { return this.members[0]; }
 
-  // 매개변수 1개만 가능 (현대 프로그래밍엔 멤버변수 final 선언되는 특성상 잘 쓰진 않음.)
+  //! 매개변수 1개만 가능 (현대 프로그래밍엔 멤버변수 final 선언되는 특성상 잘 쓰진 않음.)
   set firstMember(String name) { this.members[0] = name; }
 }
 
 
-// _언더스코어로 시작하면 private처리되어 다른파일에서 불러와 쓸 수 없음.
+//! _언더스코어로 시작하면 private처리되어 다른파일에서 불러와 쓸 수 없음.
 // 클래스, 메서드, 변수에 모두 사용 가능
 class _Idol {
 

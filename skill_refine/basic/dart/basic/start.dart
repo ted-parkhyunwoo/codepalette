@@ -11,7 +11,7 @@ import 'dart:io';
 
 
 
-void main(List<String> args) {  // main함수의 관용표현.
+void main(List<String> args) {  //! main함수의 관용표현.
 
   // 변수 선언과 사용
   print("\n변수선언과 사용:");
@@ -24,11 +24,11 @@ void main(List<String> args) {  // main함수의 관용표현.
 
 
   // 실수, 실수포매팅
-  double pi = 3.14159265358979;   // float가 없다고 함.
+  double pi = 3.14159265358979;   //! float가 없다고 함.
   print("pi.6f: (%.6f): ${pi.toStringAsFixed(6)}");
   
 
-  // 형변환(어떤 방향이든 명시해야함)
+  //! 형변환(어떤 방향이든 명시해야함)
   print("\n형변환:");
   int piInt = pi.toInt();               // 소수점 이하 데이터 손상
   print("pi: $pi, piInt: $piInt");
@@ -38,7 +38,7 @@ void main(List<String> args) {  // main함수의 관용표현.
 
   // 타입 확인은 is {type}
   print("\n타입확인: ");
-  bool isInt = piInt is int;            // 이렇게 사용할 것.
+  bool isInt = piInt is int;            //! 이렇게 사용할 것.
   bool isDouble = piIntDouble.runtimeType == 0.1.runtimeType; // 굳이 직접비교: String "double" 로는 안돼서 꼼수
   print("${isInt} ${isDouble}");
 
@@ -48,7 +48,7 @@ void main(List<String> args) {  // main함수의 관용표현.
   const int A = 3;                // 컴파일 타임 상수(자료형 int 생략시 타입 추론)
   print("A: $A");                 // 리터럴 출력
 
-  final B = DateTime.now();       // 런타임 상수: 한번만 런타임에 할당되면 변경불가.
+  final B = DateTime.now();       //! 런타임 상수: 한번만 런타임에 할당되면 변경불가.
   final DateTime C = DateTime.now();  // 런타임상수의 타입명시 (마찬가지로 생략시 타입 추론)
   print(B);
   print(C);
@@ -63,7 +63,7 @@ void main(List<String> args) {  // main함수의 관용표현.
 
   // 진수전환
   print("\n진수표현:");
-  int myHex = 0xFF;                 // 다른표기법 사용시 16진수만 허용.
+  int myHex = 0xFF;                 //! 다른표기법 사용시 16진수만 허용.
   print(myHex);
   int myBin = int.parse("1010", radix: 2);    // 다른진수입력 int.parse(string, radix: 진수);
   print(myBin);
@@ -78,7 +78,7 @@ void main(List<String> args) {  // main함수의 관용표현.
   print(binTen << 1);   // 101010 = 20;
 
 
-  // 동적 타입: var는 추론이라 선언된 이후로 타입변경 불가, dynamic은 여러 자료형을 담을 수 있음.
+  //! 동적 타입: var는 추론이라 선언된 이후로 타입변경 불가, dynamic은 여러 자료형을 담을 수 있음.
   print("\ndynamic type: ");
   dynamic myDinamic = "string";
   print(myDinamic.runtimeType);
@@ -87,12 +87,12 @@ void main(List<String> args) {  // main함수의 관용표현.
 
 
   // nullable 에 관하여. 
-  String? nullableStr = null; // 원래 null로 선언될 수 없으나 ?를 붙이면 가능.
+  String? nullableStr = null; //! 원래 null로 선언될 수 없으나 ?를 붙이면 가능.
   print("\nnullable:");
   print(nullableStr);
-  // print(nullableStr!);        // 느낌표 !로 null이 아님을 명시함(null이라면 에러 나도록 표기하여 예외 처리 유도)
+  // print(nullableStr!);        //! 느낌표 !로 null이 아님을 명시함(null이라면 에러 나도록 표기하여 예외 처리 유도)
   // 예외없이 사용하는 ?.(null 반환), ?? (기본값 대체) 등의 안전한 다른방법들이 있다 함.
-  nullableStr = nullableStr?? "NULL이여서 대체했습니다."; // nullableStr ??= "문자열" 과 같은 동작
+  nullableStr = nullableStr?? "NULL이여서 대체했습니다."; //! nullableStr ??= "문자열" 과 같은 동작
   print(nullableStr);
 
 
@@ -261,7 +261,7 @@ void main(List<String> args) {  // main함수의 관용표현.
   print(t.getHello());  // 멤버함수 호출
 
 
-  // enum 열거형 (String등으로도 같은기능을 구현할 수 있으나, 어떤 선택지가 있는지 명시 가능)
+  //! enum 열거형 (String등으로도 같은기능을 구현할 수 있으나, 어떤 선택지가 있는지 명시 가능)
   print("\n열거체");
   Status myEnum = Status.busy;
   if (myEnum == Status.idle) {
@@ -275,18 +275,18 @@ void main(List<String> args) {  // main함수의 관용표현.
 
   // function
   print("\n함수:");
-  print(sum(1));                    // 기본매개변수 설정
+  print(sum(1));                    //! 기본매개변수 설정
   print(sum(1, 2));
   print(sum(1, 2, 3));
 
-  print(sum2(a: 1, b:2));           // 기본매개변수 설정 가능
+  print(sum2(a: 1, b:2));           //! 기본매개변수 설정 가능
   print(sum2(a: 1, b: 2, c: 3));
   print(sum2(c: 2, a: 5, b: 3));    // 순서상관 X. 
 
   print(sum3(1, b:2, c:3));
 
 
-  // signature (void* 같은 역할, c, cpp에서 void*외 typedef로도 가능한데, typedef int (*Operation)(int a, int b); 로 사용.)
+  //! signature (void* 같은 역할, c, cpp에서 void*외 typedef로도 가능한데, typedef int (*Operation)(int a, int b); 로 사용.)
   Operation myOps = add;
   print(myOps(1, 2));
   print(calc(1, 2, sub));
@@ -300,13 +300,13 @@ int calc(int a, int b, Operation oper) => oper(a, b);
 
 
 
-// 함수: 기본매개변수 설정은 [] 로 묶는다. 초기화가 필수. null을 이용해  int?로도 사용 가능하나 ??= 처럼 명시해야된다.
+//! 함수: 기본매개변수 설정은 [] 로 묶는다. 초기화가 필수. null을 이용해  int?로도 사용 가능하나 ??= 처럼 명시해야된다.
 // optional parameter라고도 부름.
 int sum(int a, [int b =0, int? c]) {
   return a + b + (c ??= 0);
 }
 
-// named parameter: 매개변수를 map처럼 명시하여 넣는다. 마찬가지로 기본매개변수 설정 가능.(이땐 []가 필요 없음.)
+//! named parameter: 매개변수를 map처럼 명시하여 넣는다. 마찬가지로 기본매개변수 설정 가능.(이땐 []가 필요 없음.)
 int sum2({required int a, required int b, int c = 0}) {
   print("a: $a  b: $b  c: $c");
   return a + b + c;
@@ -319,15 +319,15 @@ int sum3(int a, {required int b, required int c}) => a + b + c;
 
 // class 의 사용: 접근제어(간략한서술), 생성자, 멤버변수, 멤버함수, 정적멤버변수와 함수에 대한 설명
 class Myclass {
-  // 접근제어자(public, private, protected) 는 없으며, class가 어떻게 선언되었나에 따라 권한이 다름. 
+  //! 접근제어자(public, private, protected) 는 없으며, class가 어떻게 선언되었나에 따라 권한이 다름. 
   // final class(상속/구현금지), base class(상속만 허용), interface class(구현만 허용), sealed class(동일 파일에서만 extends 하여 상속 혹은 implements 로 구현)
   int a = 0;
   int b = 0;
   static int c = 3;   // 정적 멤버변수 사용
   
-  // Myclass(this.a, this.b);   // 관용적 사용. 멤버변수 초기화 없이 사용 가능. 추천사용법.
+  //! Myclass(this.a, this.b);   // 관용적 사용. 멤버변수 초기화 없이 사용 가능. 추천사용법.
   // 관용적 생성자를 사용하지 않고 전통적인 사용시 a, b초기값 할당 없이 선언만 할 수 없음. 
-  // 만약 멤버변수 Nullable 예외하려면 int? a;, int? b; 로 사용
+  //! 만약 멤버변수 Nullable 예외하려면 int? a;, int? b; 로 사용
   Myclass(int a, int b){
     this.a = a;
     this.b = b;
