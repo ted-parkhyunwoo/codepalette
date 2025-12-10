@@ -1,4 +1,4 @@
-package sixth;
+package t05class2;
 
 public class Bus {
     int busNumber;

@@ -1,4 +1,4 @@
-package fifth;
+package t04class1;
 
 public class StudentTest {
     public static void main(String[] args) {

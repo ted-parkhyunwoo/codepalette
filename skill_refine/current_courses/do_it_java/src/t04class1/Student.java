@@ -1,4 +1,4 @@
-package fifth;
+package t04class1;
 
 // 네이밍 관례
 // 패키지명: 소문자로만.

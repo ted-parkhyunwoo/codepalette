@@ -1,4 +1,4 @@
-package sixth;
+package t05class2;
 
 // this, getter setter, 여러 클래스간 연동, static멤버(변수와 메서드) 활용예제
 

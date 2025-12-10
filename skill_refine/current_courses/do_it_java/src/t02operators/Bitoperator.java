@@ -1,4 +1,4 @@
-package third;
+package t02operators;
 
 public class Bitoperator {
     public static void main(String[] args) {

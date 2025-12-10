@@ -1,4 +1,4 @@
-package sixth;
+package t05class2;
 
 public class Student {
     static int serialNumber = 1000;             // static변수(인스턴스 없이 사용가능)

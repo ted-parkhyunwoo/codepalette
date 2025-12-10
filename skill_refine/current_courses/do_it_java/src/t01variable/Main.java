@@ -1,4 +1,4 @@
-package first;
+package t01variable;
 
 public class Main {
  

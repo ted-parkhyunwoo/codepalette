@@ -1,4 +1,4 @@
-package fourth;
+package t03condloop;
 
 public class Loop {
     public static void main(String[] args) {
