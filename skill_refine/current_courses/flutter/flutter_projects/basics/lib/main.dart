@@ -16,7 +16,10 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         appBar: AppBar(
           backgroundColor: colorList[0],
-          title: Text("Random DICE", style: TextStyle(color: Colors.white)),
+          title: Text(
+            "DICE",
+            style: TextStyle(color: Colors.white, fontSize: 20),
+          ),
         ),
 
         body: BodyWidget.basic(),

@@ -35,8 +35,12 @@ class _DiceRollerState extends State<DiceRoller> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Image.asset('assets/images/dice/dice-$currentDice.png', width: 200),
-        SizedBox(height: 50), //더미 사이즈(패딩 대안)
-        TextButton(onPressed: rollDice, child: StyledText("Roll Dice")),
+        SizedBox(height: 30), // 더미 사이즈(패딩 대안)
+        TextButton(
+          onPressed: rollDice,
+          style: TextButton.styleFrom(backgroundColor: Colors.deepPurple),
+          child: StyledText("Roll Dice"),
+        ),
       ],
     );
   }
