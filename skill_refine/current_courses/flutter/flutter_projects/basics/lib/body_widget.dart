@@ -23,7 +23,10 @@ class BodyWidget extends StatelessWidget {
           end: decoEndAlignment,
         ),
       ),
-      child: Center(child: DiceRoller()),
+      child: Center(
+        child:
+            DiceRoller(), // 가변위젯이라도, 그저 자식 위젯을 런타임 결정하는 것이 아닌 참조하므로 생성자에선 const로 정의가능하다.
+      ),
     );
   }
 }

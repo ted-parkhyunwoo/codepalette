@@ -16,7 +16,6 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         appBar: AppBar(
           backgroundColor: colorList[0],
-          // leading: Icon(Icons.star, color: Colors.white),
           title: Text("Random DICE", style: TextStyle(color: Colors.white)),
         ),
 

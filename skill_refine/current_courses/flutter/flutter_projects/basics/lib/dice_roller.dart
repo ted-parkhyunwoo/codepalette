@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:basics/styled_text.dart';
 
-// 유동적인 위젯 예제.
+// 유동적인 위젯 예제. 두가지로 분리. stateful 위젯과 코어 상태 위젯
 
 // 래퍼클래스는 statufull 을 상속
 class DiceRoller extends StatefulWidget {
