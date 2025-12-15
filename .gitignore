@@ -22,3 +22,5 @@ bin/
 local.properties
 macos/
 ios/
+android/
+
