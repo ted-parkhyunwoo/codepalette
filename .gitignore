@@ -20,7 +20,4 @@ build/
 *.prefs
 bin/
 local.properties
-macos/
-ios/
-android/
 
