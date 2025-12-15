@@ -15,7 +15,9 @@ class DiceRoller extends StatefulWidget {
   }
 }
 
-// 코어 클래스. extends에 유의하며 build는 똑같음. 특정 상태변경 함수에서 setState()를 사용해 상태를 변경. 또한 외부 상속금지클래스를 뜻하는 언더스코어처리
+// 코어 클래스. extends에 유의하며 build는 똑같음.
+// 특정 상태변경 함수에서 setState()를 사용해 상태를 변경.
+// 또한 외부 상속금지클래스를 뜻하는 언더스코어처리
 class _DiceRollerState extends State<DiceRoller> {
   final Random randomInstance = Random(); // 인스턴스 한번만 생성하도록 외부구현
 
@@ -34,7 +36,14 @@ class _DiceRollerState extends State<DiceRoller> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Image.asset('assets/images/dice/dice-$currentDice.png', width: 200),
+        SizedBox(
+          // image 로딩전 잠시 RollDice 버튼이 위로 올라오므로, 공간 미리 배치
+          height: 200,
+          child: Image.asset(
+            'assets/images/dice/dice-$currentDice.png',
+            width: 200,
+          ),
+        ),
         SizedBox(height: 30), // 더미 사이즈(패딩 대안)
         TextButton(
           onPressed: rollDice,
