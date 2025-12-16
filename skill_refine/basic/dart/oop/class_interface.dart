@@ -23,7 +23,7 @@ void main(List<String> args) {
 
 // interface 키워드 사용은 되나, abstract로 선언해야 객체선언을 막음.(실질적인 인터페이스 느낌)
 // interface 키워드의 역할은 자신 외 라이브러리에서의 구현 implements을 막음.(상속은 허용: extends)
-// TODO: 접근제한자(public, protected, private) 가 없는 dart에선 이런 키워드들이 접근제한역할을 하는데, 키워드별로 어떤지 정확히 알아볼 필요가 있음.
+
 abstract interface class MyInterface {
   final String name;
   MyInterface(this.name);
