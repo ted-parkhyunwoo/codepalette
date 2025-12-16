@@ -20,7 +20,17 @@ class StartScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset("assets/images/quiz-logo.png", width: 300),
+            Image.asset(
+              "assets/images/quiz-logo.png",
+              width: 300,
+              color: Colors.white54, // 권장되는 투명도 설정
+            ),
+
+            // 이미지 투명효과 방법1 (비권장): Opacity로 랩핑.
+            // Opacity(
+            //   opacity: .5,
+            //   child: Image.asset("assets/images/quiz-logo.png", width: 300),
+            // ),
             Container(
               margin: EdgeInsets.fromLTRB(0, 80, 0, 30),
               child: const Text(
@@ -28,10 +38,11 @@ class StartScreen extends StatelessWidget {
                 style: TextStyle(color: Colors.white, fontSize: 24),
               ),
             ),
-            OutlinedButton(
+            OutlinedButton.icon(
               onPressed: () {},
               style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
-              child: const Text("Start Quiz"),
+              icon: Icon(Icons.arrow_right_outlined),
+              label: const Text("Start Quiz"),
             ),
           ],
         ),
