@@ -9,6 +9,7 @@ import 'package:adv_basics/quiz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+// ignore: unused_import
 import 'package:adv_basics/main.dart';
 
 void main() {
