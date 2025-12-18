@@ -18,7 +18,7 @@ public abstract class Car {
     public void washCar() {
     }
 
-    // 템플릿메서드 (시나리오를 정의하는것이고, 루틴은 바뀌지 않으므로 final)
+    // 템플릿메서드 (시나리오를 정의하는것이고, 루틴은 바뀌지 않으므로 final : 재정의 불가선언)
     // 이런 과정은 framework 처럼 작동함(정해진 시나리오대로만 움직임)
     final public void run() {
         startCar();
