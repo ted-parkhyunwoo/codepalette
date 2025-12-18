@@ -22,5 +22,8 @@ public class CustomerTest {
         customer.sell();
         customer.order();
 
+        //! +@ java 특성상 선언된 타입(Buy, Sell) 에 따라 order() 가 다르게 작동하는것은 instance of 등으로는 불가: Sell이기도 하고 Buy 이기도 하고 Customer 이기도 하기 때문
+        // 타입에 관한 힌트 멤버를 넣어 초기화 하면 Buy.super.order() 나 Sell.super.order() 등으로 강제로 사용은 가능
+
     }
 }
