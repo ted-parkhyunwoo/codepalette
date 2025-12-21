@@ -39,6 +39,9 @@ class MainActivity : ComponentActivity() {
 
 // 탑승 인원을 드롭다운으로 선택하는 UI
 @OptIn(ExperimentalMaterial3Api::class)
+// Suppress 어노테이션은 함수명을 소문자로 시작하라는 린팅을 무시
+// (Composable은 대문자를 관례로 요구하고, kotlin은 함수명을 소문자로 시작하도록 하는것이 관례라서 서로 충돌
+@Suppress("FunctionName")
 @Composable
 fun PassengerSelector(selectedValue: String, onValueChange: (String) -> Unit) {
     val options = (MINIMUM_PASSENGER..MAXIMUM_PASSENGER).map { it.toString() }
@@ -52,48 +55,37 @@ fun PassengerSelector(selectedValue: String, onValueChange: (String) -> Unit) {
             isError = selectedValue.isBlank(),
             label = { Text("탑승인원", fontSize = 12.sp) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryEditable)
-                .fillMaxWidth()
-                .height(HEIGHT_INPUT_FIELD.dp)
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth().height(HEIGHT_INPUT_FIELD.dp)
         )
         // 드롭다운 메뉴 구성
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text("$option 명") },
-                    onClick = {
-                        onValueChange(option)
-                        expanded = false
-                    }
-                )
+                DropdownMenuItem(text = { Text("$option 명") }, onClick = {
+                    onValueChange(option)
+                    expanded = false
+                })
             }
         }
     }
 }
 
 // 입력 필드를 구성하는 컴포저블
+@Suppress("FunctionName")
 @Composable
 fun InputField(
-    label: String,
-    suffix: String = "",
-    value: String,
-    onValueChange: (String) -> Unit,
-    validateBlank: Boolean = true
+    label: String, suffix: String = "", value: String, onValueChange: (String) -> Unit, validateBlank: Boolean = true
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label, fontSize = 12.sp) },
         isError = validateBlank && value.isBlank(),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(HEIGHT_INPUT_FIELD.dp),
-        suffix = { if (suffix.isNotEmpty()) Text(suffix) }
-    )
+        modifier = Modifier.fillMaxWidth().height(HEIGHT_INPUT_FIELD.dp),
+        suffix = { if (suffix.isNotEmpty()) Text(suffix) })
 }
 
 // 전체 UI 및 상태 처리
+@Suppress("FunctionName")
 @Composable
 fun DriveDataUI() {
     var totalDistance by remember { mutableStateOf("") }
@@ -110,10 +102,7 @@ fun DriveDataUI() {
     val scrollState = rememberScrollState()
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(20.dp),
+        modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(20.dp),
         verticalArrangement = Arrangement.Top
     ) {
         InputField("총 운행거리", "KM", totalDistance, { totalDistance = it })
@@ -129,14 +118,13 @@ fun DriveDataUI() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        val isInputValid = (totalDistance.toFloatOrNull() ?: INVALID_FLOAT) > 0f &&
-                (fuelEconomy.toFloatOrNull() ?: INVALID_FLOAT) > 0f &&
-                (fuelCost.toIntOrNull() ?: INVALID_INT) > 0 &&
-                (totalPerson.toIntOrNull() ?: INVALID_INT) >= MINIMUM_PASSENGER
+        // input 검증
+        val isInputValid = (totalDistance.toFloatOrNull() ?: INVALID_FLOAT) > 0f && (fuelEconomy.toFloatOrNull()
+            ?: INVALID_FLOAT) > 0f && (fuelCost.toIntOrNull() ?: INVALID_INT) > 0 && (totalPerson.toIntOrNull()
+            ?: INVALID_INT) >= MINIMUM_PASSENGER
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Button(onClick = {
                 totalDistance = ""
@@ -147,9 +135,7 @@ fun DriveDataUI() {
                 totalPerson = ""
                 result = DEFAULT_RESULT_TEXT
                 keyboardController?.hide()
-            }) {
-                Text("초기화")
-            }
+            }) { Text("초기화") }
 
             Button(
                 onClick = {
@@ -174,11 +160,8 @@ fun DriveDataUI() {
                     } else {
                         result = "잘못 입력된 필드가 있습니다."
                     }
-                },
-                enabled = isInputValid
-            ) {
-                Text("계산")
-            }
+                }, enabled = isInputValid
+            ) { Text("계산") }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
