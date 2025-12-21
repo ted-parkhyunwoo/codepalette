@@ -6,6 +6,7 @@ import java.util.Iterator;
 import t11collectionframework.collection.Member;
 
 //! 유심히 볼건 put, get, remove, iterator(키기반), containsKey(키 포함여부)
+// +@ 수정: 다시 put하거나, replace(키, 새 값)으로 키가 있는경우만, replace(키, 기존값, 새로운값) 으로 키 값이 일치하는경우만 수정 가능
 
 public class MemberHashMap {
     private HashMap<Integer, Member> memberHashMap;
