@@ -1,4 +1,4 @@
-package t11collectionframework.collection.map.hashmap;
+package t11collectionframework.map.hashmap;
 
 import java.util.HashMap;
 import java.util.Iterator;
