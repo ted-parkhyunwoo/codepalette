@@ -15,9 +15,10 @@ public class MemberHashSetTest {
         memberHashSet.removeMember(1000);
         memberHashSet.showAllmember();
 
-        // 이미 있는 memberId로 시도: 무시됨(Member에 hashCode,equals를 재정의, hash set사용)
+
         // hash set은 해시기반, equals를 둘다 평가해서 객체가 같음을 논리비교함.
-        memberHashSet.addMember(new Member(1001, "테스트"));
+        // 따라서 Member의 객체가 같음을 평가하도록 hashCode() 와 equals() 를 override.
+        memberHashSet.addMember(new Member(1001, "테스트"));   // 이미 있는 memberId로 시도: 무시됨(Member에 hashCode,equals를 재정의, hash set사용)
         memberHashSet.showAllmember();
 
 

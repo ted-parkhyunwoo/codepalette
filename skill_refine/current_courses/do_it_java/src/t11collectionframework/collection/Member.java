@@ -31,9 +31,7 @@ public class Member {
     }
 
 
-    // hashSet 을 올바르게 사용하기 위해 memberId기반 hashCode, equals를 오버라이드
-    // memberId 가 같으면 같은 객체로 인식.
-
+    // hashSet을 사용하기 위해 memberId기반 hashCode, equals를 오버라이드 (memberId와 hashCode 가 같으면 같은객체라 판단하도록 유도)
     @Override
     public int hashCode() {
         return memberId;
