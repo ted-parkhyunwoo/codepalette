@@ -1,4 +1,4 @@
-package t12innerlambdastream;
+package t12innerlambdastream.innerclass;
 
 class Outer {
     int outNum = 10;
