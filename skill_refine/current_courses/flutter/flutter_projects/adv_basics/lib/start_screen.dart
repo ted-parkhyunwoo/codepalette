@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class StartScreen extends StatelessWidget {
   // quiz의 switchScreen 을 startQuiz로 변수저장.
@@ -24,9 +25,11 @@ class StartScreen extends StatelessWidget {
           // ),
           Container(
             margin: EdgeInsets.fromLTRB(0, 80, 0, 30),
-            child: const Text(
+            child: Text(
               "Learn Flutter the fun way!",
-              style: TextStyle(color: Colors.white, fontSize: 24),
+              style: GoogleFonts.lato(
+                textStyle: TextStyle(color: Colors.white, fontSize: 24),
+              ),
             ),
           ),
 
