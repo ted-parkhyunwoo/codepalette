@@ -48,7 +48,7 @@ class _QuestionScreen extends State<QuestionsScreen> {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 30),
-            //! 질문 갯수가 같다면 문제없지만, data의 answers가 여러개일 경우를 대비한 패턴selectedAnswers.clear();
+            //! 질문 갯수가 같다면 문제없지만, data의 answers가 여러개일 경우를 대비한 패턴
             // 아래는 List이므로 스프레드 연산자 ...을 통해 Widget타입으로 수동 열거해야함
             // map() 만 쓰면 매개변수를 재가공한 리스트로 만듬.(String -> Widget)
             ...currentQuestion.getShuffledAnswers().map((answer) {
