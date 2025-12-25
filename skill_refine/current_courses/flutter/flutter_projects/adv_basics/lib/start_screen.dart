@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+// 시작화면을 띄우고 start quiz 버튼을 배치하는 위젯
+
 class StartScreen extends StatelessWidget {
-  // quiz의 switchScreen 을 startQuiz로 변수저장.
-  final void Function() startQuiz;
-  const StartScreen(this.startQuiz, {super.key});
+  final void Function() startQuiz; // QuestionsScreen으로 연결시킬 트리거 함수 포인터
+  const StartScreen({super.key, required this.startQuiz});
 
   @override
   Widget build(BuildContext context) {

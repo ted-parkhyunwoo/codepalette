@@ -15,13 +15,13 @@ class AnswerButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 40),
+          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
           backgroundColor: const Color.fromARGB(193, 58, 13, 116),
           foregroundColor: Colors.white,
           // 최근 플러터는 elevatedbutton이 다음과 같이 둥글게 이미 적용됨
           // shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(40))
         ),
-        child: Text(answerText, textAlign: TextAlign.center,),
+        child: Text(answerText, textAlign: TextAlign.center),
       ),
     );
   }
