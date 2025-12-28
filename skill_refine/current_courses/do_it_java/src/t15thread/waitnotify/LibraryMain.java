@@ -1,4 +1,4 @@
-package t14thread.waitnotify;
+package t15thread.waitnotify;
 
 //! 큰 맥락: 동시에 많은 트랜젝션 발생시 대기 태움.
 

@@ -1,4 +1,4 @@
-package t14thread.thread;
+package t15thread.thread;
 
 class MyThread extends Thread {
     public void run() {

@@ -1,4 +1,4 @@
-package t14thread.sync;
+package t15thread.sync;
 
 //! 공유자원에 대해 synchronized 하는 3가지 예.
 // 이것을 하지 않으면 금액이 꼬임.
