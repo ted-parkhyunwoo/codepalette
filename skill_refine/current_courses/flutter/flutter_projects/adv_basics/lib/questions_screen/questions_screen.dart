@@ -59,7 +59,7 @@ class _QuestionScreen extends State<QuestionsScreen> {
             // 아래는 List이므로 스프레드 연산자 ...을 통해 Widget타입으로 수동 열거해야함
             // map() 만 쓰면 매개변수를 재가공한 리스트로 만듬.(String -> Widget)
             // +@ 버튼 갭 조절을 위해 Column으로 래핑하고 sizedbox 추가
-            ...currentQuestion.getShuffledAnswers().map((answer) {
+            ...currentQuestion.shuffledAnswers.map((answer) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

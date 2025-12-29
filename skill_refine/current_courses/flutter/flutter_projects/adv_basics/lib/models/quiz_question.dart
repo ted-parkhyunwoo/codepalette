@@ -5,7 +5,8 @@ class QuizQuestion {
 
   const QuizQuestion(this.text, this.answers);
 
-  List<String> getShuffledAnswers() {
+  //! dart 문법: result_screen에서처럼 이것도 getter로 속성화 처리
+  List<String> get shuffledAnswers {
     final shuffledList = List.of(answers);
     shuffledList.shuffle();
     return shuffledList;
