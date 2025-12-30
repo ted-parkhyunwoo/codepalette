@@ -10,7 +10,7 @@ package t15thread.waitnotify;
 
 // 참고사항
 // notify, wait, sleep 등은 예외처리 없이 사용이 불가능하여 코드가 좀 지저분해 보이긴 하나,
-// 예외처리 없다고 생각하면 보기 편함 (try 문만 해석)
+// 예외처리 없다고 생각하면 보기 편함 (try 문만 해석 하거나 throws를 배제하고 보면 됨. 어차피 IDE에서 제안한 것을 자동작성)
 
 // notify, wait, notifyAll 은 Thread 가 아닌 Object 클래스의 메서드임
 
@@ -32,23 +32,24 @@ class Library {
         //! 책이 없는경우 쓰레드 대기
         while (shelf.isEmpty()) {
             System.out.println(t.getName() + " waitting start");
-            wait();
+            wait(); // 이 시점에 쓰레드 대기 태우고 notify 일어나면 아래코드로 계속 진행됨
             System.out.println(t.getName() + " waitting end");
         }
 
         String book = shelf.removeFirst();  // 맨앞 책만 빌리는 시나리오.
-        // 이 쓰레드에서 책을 빌렸다 출력
-        System.out.println(t.getName() + ":" + book + " lend");
+
+        System.out.println(t.getName() + ":" + book + " lend"); // 이 쓰레드에서 책을 빌렸다 출력
         return book;
     }
 
     public synchronized void returnBook(String book) {
         Thread t = Thread.currentThread();
         shelf.add(book);
+
         //! 쓰레드를 모두 깨움.(java에선 가능한 쓰레드 모두 깨우는것을 권장)
         notifyAll();    // 영원히 안깨어나는 쓰레드가 있을 수 있으므로 notify 대신사용
-        // 이 쓰레드에서 반납했다 출력
-        System.out.println(t.getName() + ":" + book + " return");
+
+        System.out.println(t.getName() + ":" + book + " return"); // 이 쓰레드에서 반납했다 출력
     }
 }
 

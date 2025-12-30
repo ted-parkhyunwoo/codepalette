@@ -1,5 +1,7 @@
 package t15thread.thread;
 
+// 멀티쓰레드 사용의 Thread 상속방법과 Runnable 구현방법 두가지
+
 class MyThread extends Thread {
     public void run() {
         for (int i = 0; i < 200; ++i) {
