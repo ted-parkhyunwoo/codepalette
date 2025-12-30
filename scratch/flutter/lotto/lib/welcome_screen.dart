@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotto/app_theme.dart';
 
+// 초기 화면임. 현재 단순구조.(환영메세지, 생성버튼)
+
 class WelcomeScreen extends StatelessWidget {
   final void Function() goToLogicScreen;
 
@@ -14,16 +16,9 @@ class WelcomeScreen extends StatelessWidget {
         children: [
           AppTheme.customText("Welcome to Lotto Generator", 17, Colors.white),
           SizedBox(height: 50),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(fixedSize: Size(140, 10)),
-            onPressed: goToLogicScreen,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.navigate_next, color: Colors.black54),
-                AppTheme.customText("Generate", 14, Colors.black54),
-              ],
-            ),
+          AppTheme.customButton(
+            text: "Start Generate",
+            callBack: goToLogicScreen,
           ),
         ],
       ),
