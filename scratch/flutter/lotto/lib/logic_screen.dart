@@ -1,9 +1,11 @@
 // import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:lotto/app_theme.dart';
 import 'package:lotto/models/lotto_logic.dart';
 
 class LogicScreen extends StatelessWidget {
   final void Function() restartGenerate;
+
   LogicScreen({super.key, required this.restartGenerate});
 
   final LottoLogic lottoLogic = LottoLogic();
@@ -22,15 +24,11 @@ class LogicScreen extends StatelessWidget {
               color: Colors.greenAccent,
               shape: BoxShape.circle,
             ),
-            width: 25,
-            height: 25,
-            margin: EdgeInsets.all(10),
+            width: 40,
+            height: 40,
+            margin: EdgeInsets.all(8),
             child: Center(
-              child: Text(
-                digit.toString(),
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black),
-              ),
+              child: AppTheme.customText(digit.toString(), 18, Colors.black87),
             ),
           ),
         )
@@ -49,13 +47,17 @@ class LogicScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [...getNumsWidgets()],
           ),
-          SizedBox(height: 20),
+          SizedBox(height: 30),
 
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(fixedSize: Size(140, 10)),
             onPressed: restartGenerate,
-            child: Text(
-              "restart",
-              style: TextStyle(color: Colors.lightBlueAccent),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.navigate_next, color: Colors.black54),
+                AppTheme.customText("Generate", 14, Colors.black54),
+              ],
             ),
           ),
           // TextButton(onPressed: () => exit(0), child: Text("EXIT")),

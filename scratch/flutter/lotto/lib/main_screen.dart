@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotto/app_theme.dart';
 import 'package:lotto/logic_screen.dart';
 import 'package:lotto/models/lotto_logic.dart';
 import 'package:lotto/welcome_screen.dart';
@@ -22,6 +23,16 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: Scaffold(body: currentScreen, backgroundColor: Colors.blueGrey,));
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
+          leading: Icon(Icons.calculate, color: Colors.white, size: 30),
+          title: AppTheme.customText("Lotto Generator", 20, Colors.white),
+          backgroundColor: Colors.blueGrey[700],
+        ),
+        body: currentScreen,
+        backgroundColor: Colors.blueGrey,
+      ),
+    );
   }
 }
