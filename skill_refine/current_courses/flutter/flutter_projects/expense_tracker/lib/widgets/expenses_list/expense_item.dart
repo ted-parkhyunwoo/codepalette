@@ -1,6 +1,9 @@
 import 'package:expense_tracker/models/expense.dart';
 import 'package:flutter/material.dart';
 
+// 각개의 Expense 를 widget으로 전환(Card)
+// ExpensesList에서 ListView로 로드하여 위젯으로 전환 사용중
+
 class ExpenseItem extends StatelessWidget {
   const ExpenseItem({super.key, required this.expense});
 
