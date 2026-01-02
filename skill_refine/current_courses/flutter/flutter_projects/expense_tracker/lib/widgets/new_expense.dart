@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:expense_tracker/models/expense.dart';
+
+// 앱바의 +를 누르면 나오는 하단 팝업 위젯 (새로운 지출 추가 위젯)
 
 class NewExpense extends StatefulWidget {
   const NewExpense({super.key});
@@ -14,6 +17,8 @@ class _NewExpenseState extends State<NewExpense> {
   // TextEditingController() 는 cpp의 stringstream 과 유사한 개념 .text로 꺼내씀
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
+  DateTime? _selectedDate;
+  Category _selectedCategory = Category.leisure;
 
   //! TextEditingController 방식 사용시 소멸자(정확히는 소멸자를 흉내낸 closer) 작성해줘야 gc 자원회수 힌트 명시됨
   // 그냥 c++ 일상에서 쓰던 소멸자로 이해하면 편함. (java의 AutoClosable구현체 처리, close() 오버라이드처럼)
@@ -26,15 +31,25 @@ class _NewExpenseState extends State<NewExpense> {
   }
 
   // 날짜 선택기
-  void _presentDatePicker() {
-    final now = DateTime.now();
-    final firstDate = DateTime(now.year - 1, now.month, now.day);
-    showDatePicker(
+  void _presentDatePicker() async {
+    final DateTime now = DateTime.now();
+    final DateTime firstDate = DateTime(
+      now.year - 1,
+      now.month,
+      now.day,
+    );
+
+    //! async, await 사용
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: now,
       firstDate: firstDate,
       lastDate: now,
     );
+
+    setState(() {
+      _selectedDate = pickedDate;
+    });
   }
 
   @override
@@ -43,7 +58,7 @@ class _NewExpenseState extends State<NewExpense> {
       padding: EdgeInsets.all(16),
       child: Column(
         children: [
-          // 제목입력필드
+          //! 제목입력필드
           TextField(
             // 필드에 입력된 문자열을 변수 _enteredTitle 로 저장하기 위한 함수연결 방식 - 주석처리
             // onChanged: (str) => _enteredTitle = str,
@@ -59,7 +74,7 @@ class _NewExpenseState extends State<NewExpense> {
           Row(
             children: [
               Expanded(
-                // 소비금액 입력필드
+                //! 소비금액 입력필드
                 child: TextField(
                   controller: _amountController,
                   // 숫자만 사용할 수 있도록 키보드 타입을 숫자패드로 명시
@@ -75,11 +90,20 @@ class _NewExpenseState extends State<NewExpense> {
               const SizedBox(width: 16),
 
               Expanded(
+                //! 날짜 선택
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text("Selected Date"),
+                    Text(
+                      _selectedDate == null
+                          // 날짜를 선택하지 않으면 표시될 문자열
+                          ? 'No date selected'
+                          // 변수 뒤 !를 붙여 null이 무조건 아니라는것을 명시 가능
+                          : Expense.getFormattedDate(
+                              _selectedDate!,
+                            ),
+                    ),
                     IconButton(
                       onPressed: _presentDatePicker,
                       icon: const Icon(Icons.calendar_month),
@@ -90,16 +114,45 @@ class _NewExpenseState extends State<NewExpense> {
             ],
           ),
 
+          SizedBox(height: 16),
+
           Row(
             children: [
-              // 닫기버튼
+              //! 카테고리 드롭다운
+              DropdownButton(
+                value: _selectedCategory,
+                items: Category.values
+                    .map(
+                      (category) => DropdownMenuItem(
+                        value: category,
+                        //! dart 전용 문법중 하나로, name.toString 등으로 문자열로 열거체 요소 이름을 가져올 수 있음
+                        child: Text(category.name.toUpperCase()),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  print(value);
+
+                  if (value == null) {
+                    return;
+                  }
+
+                  setState(() {
+                    _selectedCategory = value;
+                  });
+                },
+              ),
+
+              const Spacer(),
+
+              //! 닫기버튼
               TextButton(
                 //! Navigator.pop 으로 위젯을 닫는 방법임
                 onPressed: () => Navigator.pop(context),
                 child: const Text("Cancel"),
               ),
 
-              // 가계부 추가버튼
+              //! 가계부 추가버튼
               ElevatedButton(
                 onPressed: () {
                   // print(_enteredTitle);

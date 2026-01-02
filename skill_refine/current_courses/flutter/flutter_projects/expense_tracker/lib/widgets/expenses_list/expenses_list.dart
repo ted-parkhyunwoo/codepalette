@@ -2,6 +2,8 @@ import 'package:expense_tracker/models/expense.dart';
 import 'package:expense_tracker/widgets/expenses_list/expense_item.dart';
 import 'package:flutter/material.dart';
 
+// Expenses 내 Card 형태로(ExpenseItem) 지출내역을 열거하는 ListView 위젯
+
 class ExpensesList extends StatelessWidget {
   final List<Expense> expenses;
 
