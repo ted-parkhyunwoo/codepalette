@@ -4,7 +4,8 @@ import 'package:expense_tracker/models/expense.dart';
 //! 앱바의 +를 누르면 나오는 하단 팝업 위젯 (새로운 지출 추가 위젯) stateful관리.
 
 class NewExpense extends StatefulWidget {
-  final Function(Expense expense) addNewExpense;    // 새로운 지출(유효성검증됨)추가시 연결할 함수
+  final Function(Expense expense)
+  addNewExpense; // 새로운 지출(유효성검증됨)추가시 연결할 함수
   const NewExpense({super.key, required this.addNewExpense});
 
   @override
@@ -16,6 +17,7 @@ class _NewExpenseState extends State<NewExpense> {
 
   //! dart는 보통 자동 회수하지만, 리스너 명시하면 자동회수 안되므로, 사용시에는 반드시 닫는것도 명시해야함 (dispose()참고)
   // TextEditingController() 는 cpp의 stringstream 과 유사한 개념 .text로 꺼내씀
+  // +@ 참고: dart에서는 StringBuffer로 스트링을 연결하며 .write(), .writeln(), .toString() 으로 꺼내씀. java의 StringBuilder와 유사. TextEditingController 는 flutter UI 상태관리에 종속됨.
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   DateTime? _selectedDate;

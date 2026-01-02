@@ -29,12 +29,13 @@ class ExpenseItem extends StatelessWidget {
                 Text('\$${expense.amount.toStringAsFixed(2)}'),
                 // Expanded(child: SizedBox()), // 대신 Spacer() 사용.
                 const Spacer(),
-                Row(children: [
-                  Icon(categoryIcons[expense.category]),
-                  const SizedBox(width: 8),
-                  Text(expense.formattedDate)
-                ],)
-                
+                Row(
+                  children: [
+                    Icon(categoryIcons[expense.category]),
+                    const SizedBox(width: 8),
+                    Text(expense.formattedDate),
+                  ],
+                ),
               ],
             ),
           ],
