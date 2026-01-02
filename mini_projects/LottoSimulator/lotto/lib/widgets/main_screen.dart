@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:lotto/app_theme.dart';
-import 'package:lotto/logic_screen.dart';
+import 'package:lotto/widgets/app_theme.dart';
+import 'package:lotto/widgets/logic_screen.dart';
 import 'package:lotto/models/lotto_logic.dart';
-import 'package:lotto/welcome_screen.dart';
+import 'package:lotto/widgets/welcome_screen.dart';
 
 // stateful 메인 스크린이며, 이곳에서 머테리얼, 스캐폴드 관리됨.
 // 스캐폴드의 body 부분이 swapLogicScreen() 호출을 통해 기본 웰컴스크린에서 로직스크린으로 화면 변경되도록 유도함
+
+/* 
+TODO: 
+  1. 번호생성 시간별 기록 페이지 위젯(얼만큼 저장할지는 미지수)
+  2. Favorite 설정하여 기록한 번호를 언제든 다시 볼 수 있도록 함.
+  3. 위 기능들을 하단 바로 만들 예정
+*/ 
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

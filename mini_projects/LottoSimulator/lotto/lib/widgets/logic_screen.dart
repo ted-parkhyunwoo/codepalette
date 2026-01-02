@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotto/app_theme.dart';
+import 'package:lotto/widgets/app_theme.dart';
 import 'package:lotto/models/digits_widget.dart';
 import 'package:lotto/models/lotto_logic.dart';
 

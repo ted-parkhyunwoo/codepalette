@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotto/app_theme.dart';
+import 'package:lotto/widgets/app_theme.dart';
 
 // 초기 화면임. 현재 단순구조.(환영메세지, 생성버튼)
 
