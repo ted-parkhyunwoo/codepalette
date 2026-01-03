@@ -34,9 +34,17 @@ class _ExpensesState extends State<Expenses> {
     });
   }
 
+  // 삭제: expenses_list 에서 스와이프시 작동
+  void _removeExpense(Expense expense) {
+    setState(() {
+      _registeredExpenses.remove(expense);
+    });
+  }
+
   //! show ModalBottomSheet 는 context(현재 위젯의 주소: 위젯트리 위치정보 정도로 이해하면 됨)를 토대로 builder로 생성한 위젯을 화면 하단에 로드
   void _openAddExpenseOverlay() {
     showModalBottomSheet(
+      isScrollControlled: true, // 창을 가득 채우고 스크롤 가능하게 함
       context: context,
       builder: (context) =>
           NewExpense(addNewExpense: _addNewExpense),
@@ -59,7 +67,10 @@ class _ExpensesState extends State<Expenses> {
         children: [
           const Text("The chart"),
           Expanded(
-            child: ExpensesList(expenses: _registeredExpenses),
+            child: ExpensesList(
+              expenses: _registeredExpenses,
+              onRemoveExpense: _removeExpense,
+            ),
           ),
         ],
       ),

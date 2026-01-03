@@ -91,7 +91,7 @@ class _NewExpenseState extends State<NewExpense> {
       return; // 강제리턴
     }
 
-    // 새로 추가 후
+    // 완성된 가계부 새로 추가
     widget.addNewExpense(
       Expense(
         amount: double.parse(_amountController.text),
@@ -108,7 +108,7 @@ class _NewExpenseState extends State<NewExpense> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 48, 16, 16),   // 카메라 영역등 겹치지 않게 하기 위해 탑은 좀 높게 패딩
       child: Column(
         children: [
           //! 제목입력필드
