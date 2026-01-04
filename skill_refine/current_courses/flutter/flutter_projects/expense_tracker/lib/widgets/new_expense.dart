@@ -20,7 +20,7 @@ class _NewExpenseState extends State<NewExpense> {
   // +@ 참고: dart에서는 StringBuffer로 스트링을 연결하며 .write(), .writeln(), .toString() 으로 꺼내씀. java의 StringBuilder와 유사. TextEditingController 는 flutter UI 상태관리에 종속됨.
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
-  DateTime? _selectedDate;
+  DateTime? _selectedDate = DateTime.now();   //! 원래기능은 null 이나, 현재 선택 안하면 현재 날짜로 되도록 개선: 이 코드만 바꿔서 이렇게 쓰려면 나머지도 개선해야함
   Category _selectedCategory = Category.leisure;
 
   //! TextEditingController 방식 사용시 소멸자(정확히는 소멸자를 흉내낸 closer) 작성해줘야 gc 자원회수 힌트 명시됨
