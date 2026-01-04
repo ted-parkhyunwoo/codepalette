@@ -35,10 +35,31 @@ class _ExpensesState extends State<Expenses> {
   }
 
   // 삭제: expenses_list 에서 스와이프시 작동
-  void _removeExpense(Expense expense) {
+  void _removeExpense(Expense targetExpense) {
+    final int lastIdx = _registeredExpenses.indexOf(targetExpense);
     setState(() {
-      _registeredExpenses.remove(expense);
+      _registeredExpenses.remove(targetExpense);
     });
+
+    // 이전의 스낵바가 떠있다면 이전 스낵바 우선 제거(연속제거시)
+    ScaffoldMessenger.of(context).clearSnackBars();
+    //! 스낵바 사용(삭제한 내역 취소 가능하게 함)
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        //! 무슨일인지, 내 기기와 시뮬레이터는 3초뒤 제거가 안됨.
+        duration: const Duration(seconds: 3),
+        content: const Text("Expense deleted."),
+        // undo 라벨에는 삭제취소 기능 구현
+        action: SnackBarAction(
+          label: "Undo",
+          onPressed: () {
+            setState(() {
+              _registeredExpenses.insert(lastIdx, targetExpense);
+            });
+          },
+        ),
+      ),
+    ).closed.then((r){print("[log] closed: $r");});
   }
 
   //! show ModalBottomSheet 는 context(현재 위젯의 주소: 위젯트리 위치정보 정도로 이해하면 됨)를 토대로 builder로 생성한 위젯을 화면 하단에 로드
@@ -53,6 +74,17 @@ class _ExpensesState extends State<Expenses> {
 
   @override
   Widget build(BuildContext context) {
+    // 비어있는 경우, 아닌경우 구분해서 위젯 설정
+    Widget mainContent = const Center(
+      child: Text("No expenses found. Start adding some!"),
+    );
+
+    if (_registeredExpenses.isNotEmpty) {
+      mainContent = ExpensesList(
+        expenses: _registeredExpenses,
+        onRemoveExpense: _removeExpense,
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text("Flutter Expense Tracker"),
@@ -66,12 +98,7 @@ class _ExpensesState extends State<Expenses> {
       body: Column(
         children: [
           const Text("The chart"),
-          Expanded(
-            child: ExpensesList(
-              expenses: _registeredExpenses,
-              onRemoveExpense: _removeExpense,
-            ),
-          ),
+          Expanded(child: mainContent),
         ],
       ),
     );
