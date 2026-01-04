@@ -46,7 +46,7 @@ class _ExpensesState extends State<Expenses> {
     //! 스낵바 사용(삭제한 내역 취소 가능하게 함)
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        //! 무슨일인지, 내 기기와 시뮬레이터는 3초뒤 제거가 안됨.
+        //! 무슨일인지 3초뒤 제거가 안됨: action속성 비활성화 주석처리시 3초내 정상적으로 사라짐
         duration: const Duration(seconds: 3),
         content: const Text("Expense deleted."),
         // undo 라벨에는 삭제취소 기능 구현
