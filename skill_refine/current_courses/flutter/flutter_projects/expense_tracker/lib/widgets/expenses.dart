@@ -36,7 +36,10 @@ class _ExpensesState extends State<Expenses> {
 
   // 삭제: expenses_list 에서 스와이프시 작동
   void _removeExpense(Expense targetExpense) {
-    final int lastIdx = _registeredExpenses.indexOf(targetExpense);
+    final int lastIdx = _registeredExpenses.indexOf(
+      targetExpense,
+    );
+    final String targetTitle = targetExpense.title;
     setState(() {
       _registeredExpenses.remove(targetExpense);
     });
@@ -46,10 +49,11 @@ class _ExpensesState extends State<Expenses> {
     //! 스낵바 사용(삭제한 내역 취소 가능하게 함)
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        //! 무슨일인지 3초뒤 제거가 안됨: action속성 비활성화 주석처리시 3초내 정상적으로 사라짐
+        // 3초내 삭제가 작동되지 않아(액션이 포함된 경우 자동으로 닫히지 않도록 바뀜)  persist: false 설정.
         duration: const Duration(seconds: 3),
-        content: const Text("Expense deleted."),
-        // undo 라벨에는 삭제취소 기능 구현
+        persist: false,
+        content: Text("Expense '$targetTitle' deleted."),
+        // undo 라벨에는 action으로 삭제취소 기능 구현
         action: SnackBarAction(
           label: "Undo",
           onPressed: () {
@@ -59,7 +63,7 @@ class _ExpensesState extends State<Expenses> {
           },
         ),
       ),
-    ).closed.then((r){print("[log] closed: $r");});
+    );
   }
 
   //! show ModalBottomSheet 는 context(현재 위젯의 주소: 위젯트리 위치정보 정도로 이해하면 됨)를 토대로 builder로 생성한 위젯을 화면 하단에 로드
