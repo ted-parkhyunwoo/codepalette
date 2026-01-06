@@ -4,8 +4,7 @@ import 'package:expense_tracker/models/expense.dart';
 //! 앱바의 +를 누르면 나오는 하단 팝업 위젯 (새로운 지출 추가 위젯) stateful관리.
 
 class NewExpense extends StatefulWidget {
-  final Function(Expense expense)
-  addNewExpense; // 새로운 지출(유효성검증됨)추가시 연결할 함수
+  final Function(Expense expense) addNewExpense;
   const NewExpense({super.key, required this.addNewExpense});
 
   @override
@@ -13,19 +12,16 @@ class NewExpense extends StatefulWidget {
 }
 
 class _NewExpenseState extends State<NewExpense> {
-  // String _enteredTitle = '';     // controller 대신 onChanged로 직접 변수 대입방식 - 주석처리
-
-  //! dart는 보통 자동 회수하지만, 리스너 명시하면 자동회수 안되므로, 사용시에는 반드시 닫는것도 명시해야함 (dispose()참고)
-  // TextEditingController() 는 cpp의 stringstream 과 유사한 개념 .text로 꺼내씀
-  // +@ 참고: dart에서는 StringBuffer로 스트링을 연결하며 .write(), .writeln(), .toString() 으로 꺼내씀. java의 StringBuilder와 유사. TextEditingController 는 flutter UI 상태관리에 종속됨.
+  // TextEditingController 는 flutter UI 종속성을 띠지만, cpp의 string stream처럼 작동.
+  //! dart는 자원을 자동 회수하지만, 리스너 명시하면 자동회수 안되므로, 사용시에는 반드시 닫는것도 명시해야함 (dispose()참고)
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
-  DateTime? _selectedDate = DateTime.now();   //! 원래기능은 null 이나, 현재 선택 안하면 현재 날짜로 되도록 개선: 이 코드만 바꿔서 이렇게 쓰려면 나머지도 개선해야함
+  // 원래 날짜 기본값은 null 이나, 선택 안하면 오늘로 명시(이 부분만 수정했으므로, 필요시 전체적인 개선 필요)
+  DateTime? _selectedDate = DateTime.now();
   Category _selectedCategory = Category.leisure;
 
   //! TextEditingController 방식 사용시 소멸자(정확히는 소멸자를 흉내낸 closer) 작성해줘야 gc 자원회수 힌트 명시됨
-  // 그냥 c++ 일상에서 쓰던 소멸자로 이해하면 편함. (java의 AutoClosable구현체 close() 오버라이드 처리와 유사,)
-  // 어느 언어든 입출력스트림 관련 모듈을 열었을 때 사용 후 리소스 해제를 위해 닫아줘야 하는 것 처럼 _titleController.dispose() 명시
+  // java의 AutoClosable구현체 close() 오버라이드 처리와 유사. 입출력 관련 스트림 자원회수 위해 닫는것과 유사한 개념.
   @override
   void dispose() {
     _titleController.dispose();
@@ -108,7 +104,8 @@ class _NewExpenseState extends State<NewExpense> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 48, 16, 16),   // 카메라 영역등 겹치지 않게 하기 위해 탑은 좀 높게 패딩
+      // 카메라 영역등 겹치지 않게 하기 위해 탑은 좀 높게 패딩
+      padding: EdgeInsets.fromLTRB(16, 48, 16, 16),
       child: Column(
         children: [
           //! 제목입력필드
@@ -144,14 +141,11 @@ class _NewExpenseState extends State<NewExpense> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // 날짜의 기본값 삼항연산표기(미선택시 출력할 String 등)
                     Text(
                       _selectedDate == null
-                          // 날짜를 선택하지 않으면 표시될 문자열
                           ? 'No date selected'
-                          // 변수 뒤 !를 붙여 null이 무조건 아니라는것을 명시 가능
-                          : Expense.getFormattedDate(
-                              _selectedDate!,
-                            ),
+                          : Expense.getFormattedDate(_selectedDate!),
                     ),
                     IconButton(
                       onPressed: _presentDatePicker,
