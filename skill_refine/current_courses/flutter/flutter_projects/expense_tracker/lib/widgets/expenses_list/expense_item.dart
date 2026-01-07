@@ -20,8 +20,10 @@ class ExpenseItem extends StatelessWidget {
           vertical: 16,
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(expense.title),
+            //! main.dart에서 설정한 titleLarge의 테마로 스타일을 명시.
+            Text(expense.title, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
             Row(
               // double 객체의 toString 과는 다르게 double의 2자리까지만 표현하도록 강제하는 toStringAsFixed()

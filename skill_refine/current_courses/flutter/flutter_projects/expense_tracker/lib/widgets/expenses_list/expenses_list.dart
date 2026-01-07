@@ -26,6 +26,13 @@ class ExpensesList extends StatelessWidget {
       // key 는 super.key같은 것들과 같은 타입임. 대부분 이것을 만질일은 없음.
       // 위젯에 특별한 식별자 부여. ValueKey로 생성가능(마치 HashCode처럼...) context는 주소로 이해, key는 List 요소들의 식별로 이해하면 편함
       itemBuilder: (context, index) => Dismissible(
+        //! background 를 위젯으로 설정하고 스와이프시 대체될 색상을 지정
+        background: Container(
+          //! 투명도 설정 변경사항: withOpacity(double) -> withValues(alpha: double)
+          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.75),
+          //! margin 도 이런식으로 지정 가능함(일관성유지)
+          margin: Theme.of(context).cardTheme.margin,
+        ),
         key: ValueKey(expenses[index]),
         onDismissed: (direction) {
           onRemoveExpense(expenses[index]);

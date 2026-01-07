@@ -3,6 +3,8 @@ import 'package:expense_tracker/models/expense.dart';
 import 'package:expense_tracker/widgets/new_expense.dart';
 import 'package:flutter/material.dart';
 
+// main에서 바로 호출하는 코어 위젯
+
 class Expenses extends StatefulWidget {
   const Expenses({super.key});
 
