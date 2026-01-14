@@ -38,6 +38,30 @@ void printArr(int* begin, int* end) {
     std::cout << "]\n";
 }
 
+void swapPtr(int* p, int* q) {
+    int bf = *p;
+    *p = *q;
+    *q = bf;
+}
+
+void bubble(int* begin, int* end) {
+    if (end - begin <= 1) return;
+    for (int* p = begin; p < end - 1; ++p) {
+        bool swapped = false;
+        // p 반복문에 큰 의미는 없음. q반복문이 핵심이며, 현재와 다음의 값 비교후 스왑
+        for (int* q = begin; q < end - 1 - (p - begin); ++q) 
+            if (*q > *(q + 1)) {
+                swapPtr(q, q + 1);
+                swapped = true;
+            }
+        if (!swapped) break;
+    }
+}
+
+void select(int* begin, int* end) {
+
+}
+
 void sortArr(int* begin, int* end) {
 
 }
@@ -49,7 +73,15 @@ int main() {
     int sz = 10, max = 100;
 
     int* arr = getRandIntegerArray(sz, max);
-    printArr(arr, arr + sz);
+
+    int* begin = arr;
+    int* end = begin + sz;
+
+    printArr(begin, end);
+    bubble(begin, end);
+    printArr(begin, end);
+
+
     freeArray(arr);
 
     return 0;
