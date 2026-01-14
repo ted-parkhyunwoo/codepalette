@@ -12,11 +12,16 @@ void initRandomSeed() {
     } 
 }
 
-int getRandInt(int max) {
+// 현재 int범위의 양의정수만 고려중. getRandIntegerArray 에서 처럼 max를 너무 큰 값으로 쓸 수 없게 강제 업데이트
+int getRandInt(unsigned max) {
+    if (max == 0) return 0;
+    if (max > INT_MAX) max = INT_MAX;
     return rand() % max + 1;
 }
 
-int* getRandIntegerArray(int size, int maxInt) {
+// 현재 maxInt는 int범위의 양의정수만 고려중이며, int에 맞게 조정중(int 범위 초과시 강제로 INT_MAX로 업데이트)
+int* getRandIntegerArray(int size, unsigned maxInt) {
+    if (maxInt > INT_MAX) maxInt = INT_MAX;
     int* res = new int[size];
     for (int i = 0; i < size; ++i)
         *(res + i) = getRandInt(maxInt);
@@ -44,15 +49,15 @@ inline void swapPtr(int* p, int* q) {
     *q = bf;
 }
 
-inline bool validSort(int* begin, int* end) {
+inline short validSort(int* begin, int* end) {
     // nullptr check.
-    if (begin == nullptr) return false;
+    if (begin == nullptr) return 0;
     // range check. (사실상 아래 Size check가 이 기능까지 다 하는중이므로 굳이 따지자면 필요는 없음. 가장 크리티컬 한 순서로 배치했을 뿐)
-    if (end <= begin) return false;
+    if (end <= begin) return 0;
     // size check.
-    if (end - begin <= 1) return false;
+    if (end - begin <= 1) return 0;
     
-    return true;
+    return 1;
 }
 
 void bubble(int* begin, int* end) {
@@ -62,11 +67,11 @@ void bubble(int* begin, int* end) {
     if (!validSort(begin, end)) return;
 
     for (int* p = begin; p < end - 1; ++p) {
-        bool swapped = false;
+        short swapped = 0;
         for (int* q = begin; q < end - 1 - (p - begin); ++q) 
             if (*q > *(q + 1)) {
                 swapPtr(q, q + 1);
-                swapped = true;
+                swapped = 1;
             }
         // 최적화: 버블에서 swap이 한번도 안일어났다면 이미 정렬됐다는 뜻이므로 루프종료 
         if (!swapped)   break;
@@ -129,7 +134,7 @@ int main() {
     int* end = begin + sz;
 
     printArr(begin, end);
-    insert(begin, end);
+    select(begin, end);
     printArr(begin, end);
 
 
