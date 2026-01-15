@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <ctime>
 #include <cstdlib>
+#include <climits>  // 일부 환경(linux) 에서 INT_MAX 사용 가능하도록 
 
 static int initSeed = 0;
 
@@ -117,6 +118,19 @@ void insert(int* begin, int* end) {
         if (q != p) *q = bf;
     }
 }
+
+void shell(int* begin, int* end) {
+    if (!validSort(begin, end)) return;
+
+    // step 설정
+    int step = 1;
+    while (step < (end - begin) / 3) step = step * 3 + 1;
+
+    // 정렬
+    // TODO 작성계
+
+}
+
 
 void sortArr(int* begin, int* end) {
 
