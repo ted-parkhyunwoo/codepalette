@@ -4,10 +4,20 @@ import 'package:expense_tracker/widgets/expenses.dart';
 // dart 관례: 전역변수는 k를 붙인다 함(사실확인 필요)
 // ColorScheme() 로 지정하려면 꽤 많은것을 다 지정해야 하지만, fromSeed는 기본색상을 고르면 어느정도 틀을 만들어줌.
 var kColorScheme = ColorScheme.fromSeed(seedColor: Colors.pink);
+// 다크모드 사용 컬러스
+var kDarkColorScheme = ColorScheme.fromSeed(
+  // 밝기 설정을 안바꿔주면, 기본 시드가 라이트모드용으로 생성됨
+  brightness: Brightness.dark,
+  seedColor: Colors.pink,
+  );
 
 void main() {
   runApp(
     MaterialApp(
+      // darkTheme: ThemeData.dark(),  // 기본으로 사용시...
+      darkTheme: ThemeData.dark().copyWith(
+        colorScheme: kDarkColorScheme,
+      ),
       theme: ThemeData().copyWith(
         // 기본테마 설정: 이것만으로도 미세하게 바뀜
         colorScheme: kColorScheme,
@@ -45,7 +55,7 @@ void main() {
           // ),
         ),
       ),
-
+      // themeMode: ThemeMode.system,   // 기본값임.
       home: Expenses(),
     ),
   );
