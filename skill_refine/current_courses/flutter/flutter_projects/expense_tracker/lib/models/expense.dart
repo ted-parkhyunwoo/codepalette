@@ -47,3 +47,27 @@ class Expense {
     return DateFormat('yyyy/MM/dd').format(time);
   }
 }
+
+// chart 를 위한 버킷 모델
+class ExpenseBucket {
+  final Category category;
+  final List<Expense> expenses;
+
+  const ExpenseBucket({
+    required this.category,
+    required this.expenses,
+  });
+
+  //! 대체생성자: 카테고리가 사용자 지정된 this.category의 가계부만 where필터 정렬 후 다시 리스트화
+  ExpenseBucket.forCategory(List<Expense> allExpenses, this.category)
+    : expenses = allExpenses.where((expense) => expense.category == category).toList();
+
+  // 총지출 getter.
+  double get totalExpenses {
+    double res = 0;
+    for (final Expense expense in expenses) {
+      res += expense.amount;
+    }
+    return res;
+  }
+}
