@@ -38,7 +38,7 @@ class _NewExpenseState extends State<NewExpense> {
       now.day,
     );
 
-    //! async, await 사용
+    //! 날짜 변수는 미확정이라 async, await 사용
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: now,
