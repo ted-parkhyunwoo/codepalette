@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:expense_tracker/widgets/expenses.dart';
 
-// dart 관례: 전역변수는 k를 붙인다 함(사실확인 필요)
+//! dart 관례: 전역변수는 k접두사를 붙인다 함
 // ColorScheme() 로 지정하려면 꽤 많은것을 다 지정해야 하지만, fromSeed는 기본색상을 고르면 어느정도 틀을 만들어줌.
 var kColorScheme = ColorScheme.fromSeed(seedColor: Colors.pink);
 // 다크모드 사용 컬러스
@@ -26,7 +26,7 @@ void main() {
           backgroundColor: kColorScheme.onPrimaryContainer,
           foregroundColor: kColorScheme.primaryContainer,
         ),
-        // Card의 테마: 강의와 다르게 CardTheme -> CardThemeData로 작성
+        // Card의 테마: 강의와 다르게 CardTheme -> CardThemeData로 작성해야 정상작동
         cardTheme: CardThemeData().copyWith(
           color: kColorScheme.secondaryContainer,
           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

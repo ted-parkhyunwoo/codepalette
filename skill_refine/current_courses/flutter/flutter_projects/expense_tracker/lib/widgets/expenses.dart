@@ -1,3 +1,4 @@
+import 'package:expense_tracker/widgets/chart/chart.dart';
 import 'package:expense_tracker/widgets/expenses_list/expenses_list.dart';
 import 'package:expense_tracker/models/expense.dart';
 import 'package:expense_tracker/widgets/new_expense.dart';
@@ -53,6 +54,7 @@ class _ExpensesState extends State<Expenses> {
       SnackBar(
         // 3초내 삭제가 작동되지 않아(액션이 포함된 경우 자동으로 닫히지 않도록 바뀜)  persist: false 설정.
         duration: const Duration(seconds: 3),
+        //! 크리티컬한 flutter 최근 변동사항으로, persist: false로 해야 액션이 포함된 스낵바가 3초 뒤 닫힘.
         persist: false,
         content: Text("Expense '$targetTitle' deleted."),
         // undo 라벨에는 action으로 삭제취소 기능 구현
@@ -103,7 +105,7 @@ class _ExpensesState extends State<Expenses> {
       ),
       body: Column(
         children: [
-          const Text("The chart"),
+          Chart(expenses: _registeredExpenses),
           Expanded(child: mainContent),
         ],
       ),
