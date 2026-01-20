@@ -22,7 +22,7 @@ class _ExpensesState extends State<Expenses> {
       date: DateTime.now(),
       category: Category.work,
     ),
-    
+
     Expense(
       title: "Cinema(샘플)",
       amount: 15.69,
@@ -40,9 +40,7 @@ class _ExpensesState extends State<Expenses> {
 
   // 삭제: expenses_list 에서 스와이프시 작동
   void _removeExpense(Expense targetExpense) {
-    final int lastIdx = _registeredExpenses.indexOf(
-      targetExpense,
-    );
+    final int lastIdx = _registeredExpenses.indexOf(targetExpense);
     final String targetTitle = targetExpense.title;
     setState(() {
       _registeredExpenses.remove(targetExpense);
@@ -76,14 +74,19 @@ class _ExpensesState extends State<Expenses> {
     showModalBottomSheet(
       isScrollControlled: true, // 창을 가득 채우고 스크롤 가능하게 함
       context: context,
-      builder: (context) =>
-          NewExpense(addNewExpense: _addNewExpense),
+      builder: (context) => NewExpense(addNewExpense: _addNewExpense),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // 비어있는 경우, 아닌경우 구분해서 위젯 설정
+    // 가로 세로모드별 UI를 다르게 표기하기 위한 너비 구하기
+    final sz = MediaQuery.of(context).size;
+    
+    // 직접출력
+    // print("width: ${sz.width} height: ${sz.height}");
+
+    // 지출 내역이 비어있는 경우, 아닌경우 구분해서 위젯 설정
     Widget mainContent = const Center(
       child: Text("No expenses found. Start adding some!"),
     );
@@ -94,6 +97,7 @@ class _ExpensesState extends State<Expenses> {
         onRemoveExpense: _removeExpense,
       );
     }
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Flutter Expense Tracker"),
@@ -104,12 +108,22 @@ class _ExpensesState extends State<Expenses> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Chart(expenses: _registeredExpenses),
-          Expanded(child: mainContent),
-        ],
-      ),
+
+      // 너비에 따라 차트/지출내역 다르게 표기: 원래는 body에 Column 만 있었음
+      body: sz.width < 600
+          ? Column(
+              children: [
+                Chart(expenses: _registeredExpenses),
+                Expanded(child: mainContent),
+              ],
+            )
+          : Row(
+              children: [
+                // 주의: Chart클래스의 위젯 너비가 double.infinity로 설정되어 문제를 일으키므로, expanded로 랩핑하여 반반 나눔
+                Expanded(child: Chart(expenses: _registeredExpenses)),
+                Expanded(child: mainContent),
+              ],
+            ),
     );
   }
 }
