@@ -109,7 +109,7 @@ dataDate parser(char* dateStr) {
     res.year = 0, res.month = 0, res.day = 0, res.isValid = 1;  // 혹시모를 초기화
 
     // 매개변수 오류검사 
-    if (*dateStr == '\0') {
+    if (dateStr == NULL || *dateStr == '\0') {
         res.isValid = -7;   // ERR 유효하지 않은 매개변수
         return res;
     }
@@ -219,7 +219,7 @@ dataDate parser(char* dateStr) {
 // 1: string 마지막 공백 감지하여 변조됨
 // -1: null 오류감지
 int stringChecker(char* str) {
-    if (str == NULL)    return -1;
+    if (str == NULL || *str == '\0')    return -1;
     char* bf;
 
     // get pure str length
