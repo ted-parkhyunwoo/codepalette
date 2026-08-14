@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// 구분문자를 사용하든 안하든 작동함 다만,
+// 연도는 4자리,2자리 사용가능하나 월 일 두가지는 반드시 두글자로만 가능한 상태
+
 const char DEVCHARS[] = " /-.";         // 허용된 날짜 구분문자 상수
 
 // 날짜를 저장에 사용할 자료구조(구조체)
@@ -211,15 +214,84 @@ dataDate parser(char* dateStr) {
     return res;
 }
 
+// String의 null검사, 길이검사, 앞뒤 불필요 공백 자르기
+// 0: 기능통과
+// 1: string 마지막 공백 감지하여 변조됨
+// -1: null 오류감지
+int stringChecker(char* str) {
+    if (str == NULL)    return -1;
+    char* bf;
+
+    // get pure str length
+    unsigned strLen = 0;
+    bf = str;
+    while (*bf != '\0') {
+        strLen++;
+        bf++;
+    }
+
+    // find start index without space char
+    unsigned startIdx = 0;
+    bf = str;
+    while(*bf != '\0') {
+        if (*(bf++) == ' ') startIdx++;
+        else break;
+    }
+    
+    // find last index without space char
+    unsigned lastIdx = strLen - 1;
+    bf = str + (lastIdx);
+    while (*bf == ' ') {
+        lastIdx--;
+        bf--;
+    }
+
+    // printf("[DEBUG]str: '%s' \tstartIdx = %d  \tlastIdx = %d\n", str, startIdx, lastIdx);
+    
+    // 변경사항 발생시 str 메모리 재작성
+    if (startIdx != 0 || lastIdx != strLen - 1) {
+        unsigned trueLen = lastIdx - startIdx + 1;
+        char res[11];
+        bf = str + startIdx;
+        for (int i = 0; i < trueLen; ++i) 
+            *(res + i) = *(bf++);
+        *(res + trueLen) = '\0';
+    
+        // printf("len : %d resStr : '%s'\n", trueLen, res);
+        
+        // res -> str 메모리 재작성
+        for (int i = 0; i < trueLen; ++i)
+            *(str + i) = *(res + i);
+        *(str + trueLen) = '\0';
+
+        return 1;
+    }
+    return 0;
+}
 
 int main(int argc, char* argv[]) {
 
+    printf("\n\n");
+    // stringChecker function test
+    if (argc == 1) {
+        printf("[TEST MODE]\n");
+
+        // Test 용 공백이 포함된 날짜
+        char testStr[] = "    2024-05-02  ";
+        printf("[CHANGE] '%s'  ->  ", testStr);
+        printf("'%s'\t\tisChanged:%d\n", testStr, stringChecker(testStr));
+        dataDate tmp = parser(testStr);
+        printf("(%d)\tArg: %s\t\tres:'%d %d %d'\n", tmp.isValid, testStr, tmp.year, tmp.month, tmp.day);
+        return 0;
+    }
+    // fin
     
+    // 매개변수가 있는 경우 이쪽으로 진입됨. 연속입력 가능.
     for (int i = 1; i < argc; ++i) {
         dataDate tmp = parser(argv[i]);
         printf("(%d)\tArg: %s\t\tres:%d  %d  %d\n", tmp.isValid, argv[i], tmp.year, tmp.month, tmp.day);
     }
-    printf("\n");
+    printf("\n\n");
 
 
     return 0;
