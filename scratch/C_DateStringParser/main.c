@@ -288,6 +288,7 @@ int main(int argc, char* argv[]) {
     
     // 매개변수가 있는 경우 이쪽으로 진입됨. 연속입력 가능.
     for (int i = 1; i < argc; ++i) {
+        stringChecker(argv[i]);         // 매개변수 입력 실수로 추정되는 앞뒤 공백 제거
         dataDate tmp = parser(argv[i]);
         printf("(%d)\tArg: %s\t\tres:%d  %d  %d\n", tmp.isValid, argv[i], tmp.year, tmp.month, tmp.day);
     }
