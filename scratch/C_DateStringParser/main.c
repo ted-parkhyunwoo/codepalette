@@ -25,14 +25,15 @@ typedef struct dataDate{
 
 // leap year 검사기 (4년마다 윤년이나, 100으로 나누어떨어지면 아니지만, 400으로 나누어 떨어지는건 윤년)
 int isLeapYear(short year) {
-    // 서기 0년은 없음. 0년 = 기원전1년임. 기원전1년은 어차피 윤년이므로 수학적으로 문제없음.
+    // 서기 0년은 없음. 0년 = 기원전1년. 기원전1년은 어차피 윤년이므로 수학적으로 문제없음
     return ((year % 400 == 0) || (year % 4 == 0 && year % 100 != 0));   
 }
 
 
-// dateString 의 index들을 토대로 dataDate참조조작(year는 2, 4글자에따라 다르게 변환하며, month, day는 2글자로 자동인식)
+// dateString 의 index들을 토대로 dataDate참조조작(year는 2, 4글자에따라 앞에 20자동삽입하여 4글자 숫자로 치환, month, day는 2글자로 자동인식)
 void writeDataDateStructFromStringIdxs(dataDate* data, char* str, unsigned yBegin, unsigned yEnd, unsigned mBegin, unsigned dBegin) {
     
+    // atoi 사용하기 위해 연월일 별로 string 임시 저장
     char yStr[5], mStr[3], dStr[3];
 
     // month, day 부터 해결
@@ -40,7 +41,8 @@ void writeDataDateStructFromStringIdxs(dataDate* data, char* str, unsigned yBegi
     dStr[0] = *(str + dBegin),  dStr[1] = *(str + dBegin + 1),  dStr[2] = '\0';
 
     // year 2글자인 경우 예외처리: 앞에 20을 붙임
-    // 2000년 강제 입력이 무조건 정답은 아니나, 연도생략 책임을 사용자에게 맞기는 의미의 관점으론 올바른 방법
+    // 연도 2글자 케이스 앞 20강제 삽입이 정답은 아니나, 연도생략 책임을 사용자에게 맞기는 의미의 관점으론 올바른 방법
+    // 생년월일로 이 로직을 사용할 경우는 연도 2글자 입력을 막는 방법으로 사용해야 바른 접근이라 생각함
     int isFourString = yEnd - yBegin != 1? 1 : 0;
     if (isFourString) {
         for (int i = 0; i < 4; ++i) {
@@ -58,7 +60,7 @@ void writeDataDateStructFromStringIdxs(dataDate* data, char* str, unsigned yBegi
 
 
 // 문자열(str)의 특정 인덱스 2개가 숫자가 아닌 문자인지 검사하는 함수(둘다 만족해야 1 return)
-int hasTwoCharNotDigits(char* str, unsigned firstIdx, unsigned lastIdx) {
+int isNotDigits(char* str, unsigned firstIdx, unsigned lastIdx) {
     if (str[firstIdx] < '0' || str[firstIdx] > '9')
         if (str[lastIdx] < '0' || str[lastIdx] > '9')
             return 1;
@@ -66,16 +68,17 @@ int hasTwoCharNotDigits(char* str, unsigned firstIdx, unsigned lastIdx) {
 }
 
 
-// isValidDate 함수로 dataDate를 참조하여 결점이 없는 날짜인지 검토하고 isValid를 수정
+// dataDate를 참조하여 무결점 날짜양식인지 검토하여 isValid를 수정
 void checkValidDate(dataDate* data) {
     short year = data->year,    month = data->month,    day = data->day;
 
+    // 날짜 기본규칙 초기 검사
     if (year < 0 || month < 0 || day < 0 || month > 12 || day > 31) {
         data->isValid = -8;
         return;
     }
 
-    // ERR 유효날짜 실패 (윤년까지 체크)
+    // ERR 유효날짜 실패 (윤년까지 체크, -8로 통합)
     switch(month) {
         case 4: case 6: case 9: case 11: 
             if (day > 30) {
@@ -84,7 +87,7 @@ void checkValidDate(dataDate* data) {
             }
             break;
         case 2: 
-            // ERR: 윤년체크 실패시
+            // ERR: 윤년 실패
             if (isLeapYear(year)) {
                 if (day > 29) {
                     data->isValid = -8;
@@ -98,12 +101,12 @@ void checkValidDate(dataDate* data) {
             }
             break;
     }
-    // ERR 날짜 무결성 확인코드
+    // 날짜 무결성 확인됨
     data->isValid = 0;
 }
 
 
-// string -> dataDate구조체로 변환하는 wrapper 함수
+// string -> dataDate구조체로 변환하는 wrapper 함수 (아래 작성된 공백을 제거하는 stringChecker함수는 내부에 래핑되지 않음)
 dataDate parser(char* dateStr) {
     dataDate res;           // 결과 구조체
     res.year = 0, res.month = 0, res.day = 0, res.isValid = 1;  // 혹시모를 초기화
@@ -115,14 +118,14 @@ dataDate parser(char* dateStr) {
     }
 
     // strlen 비용대신 길이 구하는 겸 초기 변수 세팅
-    unsigned hasChars = 0;                   // 디지트가 아닌 문자 포함 갯수 
-    char lastDevChar = '\0';            // 마지막으로 검출된 구분문자
-    unsigned dateStringLength = 0;      // dateStr 문자열의 총 길이
+    unsigned hasChars = 0;              // 디지트가 아닌 문자 포함 갯수 
+    char lastDevChar = '\0';            // 마지막으로 검출된 구분문자(추정. 숫자외 다른문자로 저장됨, 유효구분문자여부 나중에 검사)
+    unsigned dateStrLen = 0;            // dateStr 문자열 length
     char* bf = dateStr;                 // 임시버퍼
 
-    // 초기 오류 검사 겸 변수 정하기
+    // 초기 오류 검사 겸 변수 정하기(hasChars, lastDevChar, dateStringLength)
     while (*bf != '\0') {
-        dateStringLength++;
+        dateStrLen++;
         // 숫자 외 등장시
         if (*bf < '0' || *bf > '9') {
             if (hasChars == 2) {
@@ -131,7 +134,7 @@ dataDate parser(char* dateStr) {
             }
             if (lastDevChar != '\0') {
                 if (lastDevChar != *bf) {
-                    res.isValid = -3;       // ERR 구분문자가 앞뒤가 다름.
+                    res.isValid = -3;       // ERR 구분문자가 앞뒤가 다름
                     return res;
                 }
             }
@@ -165,7 +168,7 @@ dataDate parser(char* dateStr) {
 
     
     // case1. 6숫자인 경우 (260810)
-    if (dateStringLength == 6) {
+    if (dateStrLen == 6) {
         // 문자포함시 오류처리 
         if (hasChars) {
             res.isValid = -2;       // ERR 6길이의 매개변수에는 숫자로된 문자만 사용 가능
@@ -176,26 +179,27 @@ dataDate parser(char* dateStr) {
 
 
     // case2. 8문자인 경우 (26-08-10 or 20260810)
-    else if (dateStringLength == 8) {
-        // 적절한 구분문자 위치인지 검사하는 함수 (문자가 포함된 경우)
-        if (hasChars && !hasTwoCharNotDigits(dateStr, 2, 5)) {
+    else if (dateStrLen == 8) {
+        // 적절한 구분문자 위치인지 검사하는 함수 (문자가 포함된 dateStr이나, 적절한 위치가 아닌경우)
+        if (hasChars && !isNotDigits(dateStr, 2, 5)) {
             res.isValid = -5;       //ERR 구분문자 위치 오류
             return res;               
         }
-        // 이제 여기까지 살아남은 dateStr문자열의 두 케이스는 26-08-10 혹은 20260810 형태
-        // all digits case
+
+        // 여기까지 조건분기 되지 않고 남은 dateStr문자열의 두 케이스는 26-08-10 혹은 20260810 형태
+        // all digits case (20260810)
         if (!hasChars) 
             writeDataDateStructFromStringIdxs(&res, dateStr, 0, 3, 4, 6);
-        // 구분문자 case
+        // 구분문자 포함 case (26-08-10)
         else
             writeDataDateStructFromStringIdxs(&res, dateStr, 0, 1, 3, 6);
     }
 
 
     // case3. 10문자: 항상 (2026c08c10)과 같은 형태, c는 digit가 아닌 문자를 뜻함
-    else if (dateStringLength == 10) {
+    else if (dateStrLen == 10) {
         // 적절한 구분문자 위치인지 검사하는 함수
-        if (!hasTwoCharNotDigits(dateStr, 4, 7)) {
+        if (!isNotDigits(dateStr, 4, 7)) {
             res.isValid = -5;       // ERR 구분문자 위치 오류 
             return res;
         }
@@ -222,7 +226,7 @@ int stringChecker(char* str) {
     if (str == NULL || *str == '\0')    return -1;
     char* bf;
 
-    // get pure str length
+    // get pure str length (for find last index)
     unsigned strLen = 0;
     bf = str;
     while (*bf != '\0') {
@@ -248,7 +252,7 @@ int stringChecker(char* str) {
 
     // printf("[DEBUG]str: '%s' \tstartIdx = %d  \tlastIdx = %d\n", str, startIdx, lastIdx);
     
-    // 변경사항 발생시 str 메모리 재작성
+    // 처음과 끝 공백을 제외한 문자 발생시 참조된 str 재작성
     if (startIdx != 0 || lastIdx != strLen - 1) {
         unsigned trueLen = lastIdx - startIdx + 1;
         char res[11];
@@ -272,12 +276,12 @@ int stringChecker(char* str) {
 int main(int argc, char* argv[]) {
 
     printf("\n\n");
-    // stringChecker function test
+    // stringChecker function test: 매개변수 없이 실행시 진입
     if (argc == 1) {
         printf("[TEST MODE]\n");
 
         // Test 용 공백이 포함된 날짜
-        char testStr[] = "    2024-05-02  ";
+        char testStr[] = "    2024-05-02  ";        // [중요]이 변수로 테스트 합니다
         printf("[CHANGE] '%s'  ->  ", testStr);
         printf("'%s'\t\tisChanged:%d\n", testStr, stringChecker(testStr));
         dataDate tmp = parser(testStr);
@@ -293,7 +297,6 @@ int main(int argc, char* argv[]) {
         printf("(%d)\tArg: %s\t\tres:%d  %d  %d\n", tmp.isValid, argv[i], tmp.year, tmp.month, tmp.day);
     }
     printf("\n\n");
-
 
     return 0;
 }
