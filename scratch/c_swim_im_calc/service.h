@@ -1,7 +1,23 @@
-//! core.h, core.c 를 기반으로 사용자가 사용하는 서비스함수를 여기서 구현
+// core.h 를 service에서 사용자단 래핑.
+// 현재 goal 은 main.c 에서 받고있으며 90으로 설정됨
 
-// [TODO]strArrToImResult는 strArr를 기반으로 사용하지만, main.c의 strArrToImResult사용예제처럼 1번요소(0번은 파일명) 부터 사용할수있도록 하므로 이곳에서 디테일하게 관리
+/* 
+int argc, char* argv[] 기반으로 받으므로 
+    cmd: './파일명 각 기록' 
+    e.g:    ./a.out 17.3 21.6 26.3 18.5
+방식으로 연달아 입력하면 wrapper에서 계산해줌
+*/
 
 
-//  imResult 와 목표치(90초 등) 를 매개변수로 입력받아 결과와 목표치에 얼마 차이나는지를 string으로 print 하는 함수 작성 (결과 데이터도 imResult에 추가할지도 고려. 계산까지 된건지, 유효성은 bool로 평가)
+#ifndef SERVICE_H
+#define SERVICE_H
 
+#include "data.h"
+
+// 출력함수
+void printResultString(imResult* imres);
+// 위 출력함수와 core.c를 결합한 최종 사용자단 래퍼함수(스택메모리 구조체 생성, 구조체 작성, 계산, 출력으로 이어짐)
+void wrapper(int argc, char* argv[], double goal);
+
+
+#endif

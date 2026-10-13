@@ -8,7 +8,10 @@ typedef struct imResult{
     double back;
     double breast;
     double freestyle;
-    double fix;
+    double total;       // 합산치
+    double goal;        // 목표치
+    double result;      // 목표치 - 합산치
+    int isCalculated;   // 수정여부
 } imResult;
 
 #endif

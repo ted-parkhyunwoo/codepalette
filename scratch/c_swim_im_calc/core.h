@@ -12,4 +12,7 @@ void clearImResult(imResult* res);
 // [Parser] string array (4개라고 가정함 주의) 를 기반으로 double로 전환하여 imResult 구조체로 변환
 imResult strArrToImResult(char* strArr[]);
 
+// goal과 imResult 를 입력하면 imResult 의 goal과 result를 수정하며 isCalculated 를 1로 수정
+void calc(imResult* imResult, double goal);
+
 #endif
