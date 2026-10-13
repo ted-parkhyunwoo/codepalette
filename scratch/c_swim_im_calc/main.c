@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 
 
     //! TEST3: service 단의 최종 사용
-    wrapper(argc, argv, 90);
+    wrapper(argc, argv, GOAL);
 
     return 0;
 }
