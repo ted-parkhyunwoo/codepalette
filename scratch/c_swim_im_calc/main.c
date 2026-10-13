@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "imcalc.h"
 #include "data.h"
+#include "core.h"
 
 const double GOAL = 90;
 
@@ -14,6 +14,8 @@ int main(int argc, char* argv[]) {
         printf("%s: %s\n", arr[i], isNumberStr(arr[i])? "ok" : "FALSE!!!");
     */
 
+
+    //! TEST1 : 프로토타입 코드 (매개변수를 직접 double 전환후 계산)
     int hasArgs = argc != 1? 1 : 0;
 
     if (hasArgs) {
@@ -28,11 +30,9 @@ int main(int argc, char* argv[]) {
         printf("GOAL: %.2fs\nTOTAL : %.3fs (%+.2fs)\n", GOAL, res, res - GOAL);
     }
 
-
-    imResult testRes = argsToImResult(argc, argv);
-
+    //! TEST2: core.c에 작성한 함수구현방식의 Test. (0번 매개변수는 파일명이므로 제외)
+    imResult testRes = strArrToImResult(argv + 1);
     printf("[test]: %f %f %f %f \n", testRes.butterfly, testRes.back, testRes.breast, testRes.freestyle);
-
 
     return 0;
 }
