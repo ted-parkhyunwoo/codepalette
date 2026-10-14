@@ -31,7 +31,6 @@ int isNumberStr(const char* str) {
 }
 
 
-
 void clearImResult(imResult* res) {
     res->butterfly = 0;
     res->back = 0;
@@ -43,37 +42,32 @@ void clearImResult(imResult* res) {
     res->result = 0;
 }
 
+
 imResult strArrToImResult(char* strArr[]) {
     imResult res;
     clearImResult(&res);
-    int isValidArgs = 1;
 
-    
-    // [TODO]data import.
+    // 입력검증(사용자의 문자열이 double 전환 가능한지) 실패시 convertError에 에러코드(1)가 삽입됨.
     for (int i = 0; i < 4; ++i) {
         char* bf = *(strArr + i);
-        if (isNumberStr(bf)) {
+        if (isNumberStr(bf)) 
             continue;
-        }
-        isValidArgs = 0;
-        break;
-    }
-
-
-    if (!isValidArgs) {
+        
         clearImResult(&res);
-        printf("Arguments ERR. exit\n");
+        printf("[CORE STOP] '%s' is not a number. \n", *(strArr + i));
+        res.convertError = 1;
         return res;
     }
 
 
-    // 이래로는 argv 의 str 를 double로 변환후 res로 삽입
+    // argv 의 str 를 double로 변환후 imResult 구조체 res로 대입
     char** bf = strArr;
     res.butterfly = atof(*bf++);
     res.back = atof(*bf++);
     res.breast = atof(*bf++);
     res.freestyle = atof(*bf);
     res.total = res.butterfly + res.back + res.breast + res.freestyle;
+    res.convertError = 0;
 
     return res;
 }
@@ -81,10 +75,15 @@ imResult strArrToImResult(char* strArr[]) {
 
 void calc(imResult* imres, double goal) {
     if (imres->isCalculated) {
-        printf("[ERR]이미 계산이 완료된 imResult 구조체\n");
+        printf("[CORE STOP] 이미 계산이 완료된 imResult 구조체\n");
         return;
     }
-    
+
+    if (imres->convertError) {
+        printf("[CORE ERR] 문자열의 숫자전환 실패\n");
+        return;
+    }
+ 
     imres->goal = goal; // 굳이 1회성 출력에는 필요는 없으나 imResult 구조체에 일단 기록해둠 
     imres->result = imres->total - imres->goal; // 아래도 imres->goal 대신 goal 로 사용하면 1회성 사용 가능
     imres->isCalculated = 1;
