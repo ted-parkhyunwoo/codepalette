@@ -10,8 +10,8 @@ typedef struct imResult{
     double freestyle;
     double total;       // 합산치
     double goal;        // 목표치
-    double result;      // 목표치 - 합산치
-    int isCalculated;   // [bool] 수정여부
+    double result;      // 결과치 (목표-합산)
+    int isCalculated;   // [bool] 계산완료여부
     int convertError;   // [bool] 입력검증오류(str->double 전환 실패)
 } imResult;
 
