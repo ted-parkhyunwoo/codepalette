@@ -27,7 +27,7 @@ def extract_image(image_path):
     data = pytesseract.image_to_data(
         gray,
         lang="kor+eng",
-        config="--psm 11",
+        config="--psm 6",
         output_type=Output.DICT
     )
 
@@ -125,15 +125,19 @@ def main():
 
     all_string_list = list()
 
+    #! 랩넘버가 나오기 전까지 쓸데없는것은 출력하지 않게 하기 위한 트리거
+    passedNum = False
+
     for line in result["lines"]:
-        all_string_list.append(f'{line["text"]}')
+        bf:str = f'{line["text"]}'
+        if bf[0].isdigit():
+            passedNum = True
+        if passedNum:
+            all_string_list.append(bf) 
 
-    for s in all_string_list:
-        print(s)
 
-    print("\n")
-
-    im_record_list = list()
+    
+    record_str_list = list()
 
     for s in all_string_list:
         idx = 0
@@ -145,9 +149,11 @@ def main():
                 idx+=1
             if s[idx] == '접' or s[idx] == '배' or s[idx] == '평' or s[idx] == '자':
                 #! 여기서 접배평자의 경우의 스트링만 걸러짐.
-                im_record_list.append(s)
+                record_str_list.append(s)
+        else:
+            record_str_list.append(f'\t[TEST]휴식구간 추정 플레인 스트링: \t\t{s}')
 
-    for s in im_record_list:
+    for s in record_str_list:
         print(s)
 
 if __name__ == "__main__":
