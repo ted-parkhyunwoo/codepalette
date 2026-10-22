@@ -123,11 +123,10 @@ def main():
     image_path = Path(args.image)
     result = extract_image(image_path)
 
+    # OCR로 리드된 string list 선언
     all_string_list = list()
-
     #! 랩넘버가 나오기 전까지 쓸데없는것은 출력하지 않게 하기 위한 트리거
     passedNum = False
-
     for line in result["lines"]:
         bf:str = f'{line["text"]}'
         if bf[0].isdigit():
@@ -135,9 +134,10 @@ def main():
         if passedNum:
             all_string_list.append(bf) 
 
-
-    
+    # TEST String List and counter
     record_str_list = list()
+    swim_counter = 0
+    rest_counter = 0
 
     for s in all_string_list:
         idx = 0
@@ -147,14 +147,47 @@ def main():
                 idx+=1
             while s[idx] == ' ':
                 idx+=1
-            if s[idx] == '접' or s[idx] == '배' or s[idx] == '평' or s[idx] == '자':
-                #! 여기서 접배평자의 경우의 스트링만 걸러짐.
-                record_str_list.append(s)
+
+            isFreestyle = False
+            if s[idx] == '자':
+                isFreestyle = True
+            lastIdx = idx
+            if s[idx] == '접' or s[idx] == '배' or s[idx] == '평' or isFreestyle:
+                #! 's' is swimming(guessed) plain string.
+                while not s[idx].isdigit():
+                    idx+=1
+                if (s[idx + 2] == ':'):
+                    # 영법진행으로 확정된 string
+                    swim_counter += 1
+                    bf = (s[:idx + 7])
+                    if isFreestyle:
+                        # 자 유 형 (크롤)을 알맞게 재조정
+                        timeStartIdx = lastIdx
+                        while s[timeStartIdx] != ':':
+                            timeStartIdx+=1
+                        timeStartIdx -= 2
+                        tmp = s[:lastIdx] + "자유 " + s[timeStartIdx:timeStartIdx+7]
+                        bf = tmp
+                    record_str_list.append(bf)
+                else:
+                    record_str_list.append(f'\tUnknown String: {s}')
         else:
-            record_str_list.append(f'\t[TEST]휴식구간 추정 플레인 스트링: \t\t{s}')
+            #! 여기서의 s는 휴식으로 추정되는 plain string
+            
+            idx = 0
+            # s를 재가공하며 rest로 판명되면 rest_counter += 1
+            while not s[idx].isdigit():
+                idx+=1
+            if (s[idx + 2] == ':'):
+                #! rest 의 소수점까지는 폰트가 작아 인식이 안되므로 소수점 삭제
+                record_str_list.append(f'\tRest: {s[idx:idx + 5]}')
+                rest_counter += 1
+            else:
+                record_str_list.append(f'\tUnknown String: {s}')
 
     for s in record_str_list:
         print(s)
+    print(f'[Counter] Swim: {swim_counter}\tRest: {rest_counter}')
 
 if __name__ == "__main__":
     main()
