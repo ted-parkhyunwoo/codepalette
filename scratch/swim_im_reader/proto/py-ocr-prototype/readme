@@ -1,0 +1,13 @@
+테서렉트 ocr 활용
+
+sudo apt install tesseract-ocr tesseract-ocr-kor
+
+
+//! python 프로토타입은 오롯이 gpt가 작성
+python용 프로토타입에서 사용시 설치해야할 라이브러리
+pip install pytesseract opencv-python
+
+
+python [실행파일명] [분석할 파일명]
+
+결과가 terminal로 print 되며, json으로 저장됨
