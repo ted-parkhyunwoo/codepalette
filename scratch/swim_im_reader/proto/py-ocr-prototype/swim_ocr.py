@@ -1,7 +1,6 @@
 
 
 import argparse
-import json
 from pathlib import Path
 
 import cv2
@@ -40,25 +39,17 @@ def extract_image(image_path):
         if not text:
             continue
 
-        try:
-            confidence = float(data["conf"][i])
-        except (ValueError, TypeError):
-            confidence = -1
-
         # 전처리로 1.5배 확대했으므로 원본 좌표로 환산
         scale = 1.5
         x = round(data["left"][i] / scale)
         y = round(data["top"][i] / scale)
-        w = round(data["width"][i] / scale)
         h = round(data["height"][i] / scale)
 
         words.append({
             "text": text,
             "x": x,
             "y": y,
-            "width": w,
             "height": h,
-            "confidence": confidence
         })
 
     # 글자의 세로 중심을 기준으로 행 분류
@@ -127,30 +118,37 @@ def main():
         description="수영 기록 이미지 OCR 추출"
     )
     parser.add_argument("image", help="입력 이미지 경로")
-    parser.add_argument(
-        "-o", "--output",
-        help="출력 JSON 경로"
-    )
     args = parser.parse_args()
 
     image_path = Path(args.image)
-    output_path = Path(args.output) if args.output else (
-        image_path.with_suffix(".json")
-    )
-
     result = extract_image(image_path)
 
-    output_path.write_text(
-        json.dumps(result, ensure_ascii=False, indent=2),
-        encoding="utf-8"
-    )
-
-    print(f"저장 완료: {output_path}")
-    print("\n--- 인식된 행 ---")
+    all_string_list = list()
 
     for line in result["lines"]:
-        print(f'{line["y"]:4} | {line["text"]}')
+        all_string_list.append(f'{line["text"]}')
 
+    for s in all_string_list:
+        print(s)
+
+    print("\n")
+
+    im_record_list = list()
+
+    for s in all_string_list:
+        idx = 0
+        if s[0].isdigit():
+            idx+=1
+            while s[idx].isdigit():
+                idx+=1
+            while s[idx] == ' ':
+                idx+=1
+            if s[idx] == '접' or s[idx] == '배' or s[idx] == '평' or s[idx] == '자':
+                #! 여기서 접배평자의 경우의 스트링만 걸러짐.
+                im_record_list.append(s)
+
+    for s in im_record_list:
+        print(s)
 
 if __name__ == "__main__":
     main()

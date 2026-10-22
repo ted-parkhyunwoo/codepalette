@@ -10,4 +10,5 @@ pip install pytesseract opencv-python
 
 python [실행파일명] [분석할 파일명]
 
-결과가 terminal로 print 되며, json으로 저장됨
+인식된 행 문자열 목록과 접배평자 형식으로 필터링한 문자열이 terminal에 출력되며,
+결과는 별도 파일로 저장되지 않음
