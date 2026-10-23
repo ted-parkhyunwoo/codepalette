@@ -12,6 +12,7 @@ import pytesseract
 from pytesseract import Output
 
 SwimRecord = list[int | str | float | timedelta]
+TESSDATA_DIR = Path(__file__).resolve().parent / "tessdata_for_samsung_health"
 
 
 def extract_image(image_path):
@@ -33,7 +34,7 @@ def extract_image(image_path):
     data = pytesseract.image_to_data(
         gray,
         lang="kor+eng",
-        config="--psm 6",
+        config=f'--tessdata-dir "{TESSDATA_DIR}" --psm 6',
         output_type=Output.DICT
     )
 

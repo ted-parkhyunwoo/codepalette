@@ -1,6 +1,9 @@
 테서렉트 ocr 활용
 
-sudo apt install tesseract-ocr tesseract-ocr-kor
+sudo apt install tesseract-ocr
+
+OCR에는 프로젝트의 `tessdata_for_samsung_health/kor.traineddata`와
+`eng.traineddata`를 사용합니다.
 
 
 //! python 프로토타입은 오롯이 gpt가 작성
@@ -8,7 +11,7 @@ python용 프로토타입에서 사용시 설치해야할 라이브러리
 pip install pytesseract opencv-python
 
 
-python [실행파일명] [분석할 파일명]
+python swim_ocr.py test_samples/samsung_health_swim_laps.jpg
 
 인식된 행 문자열 목록과 Samsung Health 수영 기록이 terminal에 출력되며,
 결과는 별도 파일로 저장되지 않음
@@ -18,7 +21,7 @@ python [실행파일명] [분석할 파일명]
 필요한 패키지 설치:
 
 ```bash
-sudo apt install g++ cmake libopencv-dev libtesseract-dev tesseract-ocr tesseract-ocr-kor
+sudo apt install g++ cmake libopencv-dev libtesseract-dev tesseract-ocr
 ```
 
 빌드 및 실행:
@@ -26,5 +29,7 @@ sudo apt install g++ cmake libopencv-dev libtesseract-dev tesseract-ocr tesserac
 ```bash
 cmake -S . -B build
 cmake --build build
-./build/swim_ocr_cpp test.jpg
+./build/swim_ocr_cpp test_samples/samsung_health_swim_laps.jpg
 ```
+
+샘플 이미지는 `test_samples/` 디렉터리에 있습니다.

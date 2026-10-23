@@ -26,14 +26,10 @@ struct Word {
     int y;
     int height;
 
+    // OCR 좌표로부터 단어의 세로 중심 위치를 계산합니다.
     double center_y() const {
         return y + height / 2.0;
     }
-};
-
-struct Line {
-    double center_y;
-    std::vector<Word> words;
 };
 
 struct SwimRecord {
@@ -43,15 +39,21 @@ struct SwimRecord {
     double rest_seconds = 0.0;
 };
 
-struct ImSession {
-    double total_seconds;
-    std::vector<double> lap_seconds;
-};
-
+// Python의 round와 같은 반올림 규칙으로 좌표를 정수화합니다.
 double round_like_python(double value) {
     return std::nearbyint(value);
 }
 
+// 한 행에 속한 단어들의 평균 세로 중심을 계산합니다.
+double line_center_y(const std::vector<Word>& words) {
+    double center_sum = 0.0;
+    for (const Word& word : words) {
+        center_sum += word.center_y();
+    }
+    return center_sum / words.size();
+}
+
+// 이미지에서 한국어·영어 텍스트를 인식하고 단어들을 행 단위 문자열로 반환합니다.
 std::vector<std::string> extract_lines(const std::string& image_path) {
     const cv::Mat image = cv::imread(image_path);
     if (image.empty()) {
@@ -70,7 +72,7 @@ std::vector<std::string> extract_lines(const std::string& image_path) {
     );
 
     tesseract::TessBaseAPI api;
-    if (api.Init(nullptr, "kor+eng") != 0) {
+    if (api.Init(SWIM_OCR_TESSDATA_DIR, "kor+eng") != 0) {
         throw std::runtime_error("Tesseract kor+eng 초기화에 실패했습니다.");
     }
     api.SetPageSegMode(tesseract::PSM_SINGLE_BLOCK);
@@ -133,46 +135,42 @@ std::vector<std::string> extract_lines(const std::string& image_path) {
         }
     );
 
-    std::vector<Line> lines;
+    std::vector<std::vector<Word>> lines;
     for (const Word& word : words) {
         const double center_y = word.center_y();
         const double threshold = std::max(8.0, word.height * 0.65);
         auto matched = lines.rend();
         for (auto line = lines.rbegin(); line != lines.rend(); ++line) {
-            if (center_y - line->center_y > threshold) {
+            const double line_center = line_center_y(*line);
+            if (center_y - line_center > threshold) {
                 break;
             }
-            if (std::abs(center_y - line->center_y) <= threshold) {
+            if (std::abs(center_y - line_center) <= threshold) {
                 matched = line;
                 break;
             }
         }
 
         if (matched == lines.rend()) {
-            lines.push_back({center_y, {word}});
+            lines.push_back({word});
             continue;
         }
 
-        matched->words.push_back(word);
-        double center_sum = 0.0;
-        for (const Word& line_word : matched->words) {
-            center_sum += line_word.center_y();
-        }
-        matched->center_y = center_sum / matched->words.size();
+        matched->push_back(word);
     }
 
     std::vector<std::string> result;
     result.reserve(lines.size());
-    for (Line& line : lines) {
+    for (std::vector<Word>& line : lines) {
         std::stable_sort(
-            line.words.begin(),
-            line.words.end(),
+            line.begin(),
+            line.end(),
             [](const Word& lhs, const Word& rhs) {
                 return lhs.x < rhs.x;
             }
         );
         std::string text;
-        for (const Word& word : line.words) {
+        for (const Word& word : line) {
             if (!text.empty()) {
                 text += ' ';
             }
@@ -183,6 +181,7 @@ std::vector<std::string> extract_lines(const std::string& image_path) {
     return result;
 }
 
+// 문자열 앞뒤의 공백 문자를 제거합니다.
 std::string trim(const std::string& value) {
     const auto first = value.find_first_not_of(" \t\n\r\f\v");
     if (first == std::string::npos) {
@@ -192,6 +191,7 @@ std::string trim(const std::string& value) {
     return value.substr(first, last - first + 1);
 }
 
+// 문자열 내부의 모든 공백 문자를 제거합니다.
 std::string remove_whitespace(const std::string& value) {
     std::string result;
     for (unsigned char character : value) {
@@ -202,6 +202,7 @@ std::string remove_whitespace(const std::string& value) {
     return result;
 }
 
+// Samsung Health OCR 행을 랩 기록으로 변환하고 휴식 시간을 해당 랩에 연결합니다.
 std::vector<SwimRecord> fix_swim_record_string_for_samsung_health(
     const std::vector<std::string>& ocr_lines
 ) {
@@ -286,10 +287,11 @@ std::vector<SwimRecord> fix_swim_record_string_for_samsung_health(
     return swim_records;
 }
 
-std::vector<ImSession> find_im_sessions(
+// 접영-배영-평영-자유형 순서로 이어지는 IM100 세션의 시작 인덱스를 찾습니다.
+std::vector<std::size_t> find_im_session_starts(
     const std::vector<SwimRecord>& swim_records
 ) {
-    std::vector<std::size_t> starts;
+    std::vector<std::size_t> session_starts;
     for (std::size_t i = 0; i + 3 < swim_records.size(); ++i) {
         if (
             swim_records[i].stroke.rfind("접", 0) == 0 &&
@@ -297,24 +299,15 @@ std::vector<ImSession> find_im_sessions(
             swim_records[i + 2].stroke.rfind("평", 0) == 0 &&
             swim_records[i + 3].stroke.rfind("자", 0) == 0
         ) {
-            starts.push_back(i);
+            session_starts.push_back(i);
             i += 3;
         }
     }
 
-    std::vector<ImSession> sessions;
-    for (const std::size_t start : starts) {
-        ImSession session{0.0, {}};
-        for (std::size_t offset = 0; offset < 4; ++offset) {
-            const double lap_seconds = swim_records[start + offset].lap_seconds;
-            session.total_seconds += lap_seconds;
-            session.lap_seconds.push_back(lap_seconds);
-        }
-        sessions.push_back(std::move(session));
-    }
-    return sessions;
+    return session_starts;
 }
 
+// 랩·휴식 통계와 감지된 IM100 세션을 콘솔에 출력합니다.
 void print_results(const std::vector<SwimRecord>& swim_records) {
     int total_rest = 0;
     double total_rest_seconds = 0.0;
@@ -353,21 +346,28 @@ void print_results(const std::vector<SwimRecord>& swim_records) {
         std::cout << "[경고]누락된 랩이 있을 수 있음\n";
     }
 
-    const std::vector<ImSession> sessions = find_im_sessions(swim_records);
-    if (sessions.empty()) {
+    const std::vector<std::size_t> session_starts =
+        find_im_session_starts(swim_records);
+    if (session_starts.empty()) {
         std::cout << "수행된 im100 세션을 찾을 수 없습니다.\n";
         return;
     }
 
-    std::cout << "im100 세션 " << sessions.size() << "개를 찾았습니다.\n";
-    for (std::size_t index = 0; index < sessions.size(); ++index) {
-        const ImSession& session = sessions[index];
-        std::cout << index + 1 << "번 세션: " << session.total_seconds << "s [";
-        for (std::size_t lap = 0; lap < session.lap_seconds.size(); ++lap) {
-            if (lap > 0) {
+    std::cout << "im100 세션 " << session_starts.size()
+              << "개를 찾았습니다.\n";
+    for (std::size_t index = 0; index < session_starts.size(); ++index) {
+        const std::size_t start = session_starts[index];
+        double total_seconds = 0.0;
+        for (std::size_t offset = 0; offset < 4; ++offset) {
+            total_seconds += swim_records[start + offset].lap_seconds;
+        }
+
+        std::cout << index + 1 << "번 세션: " << total_seconds << "s [";
+        for (std::size_t offset = 0; offset < 4; ++offset) {
+            if (offset > 0) {
                 std::cout << ", ";
             }
-            std::cout << session.lap_seconds[lap];
+            std::cout << swim_records[start + offset].lap_seconds;
         }
         std::cout << "]\n";
     }
@@ -375,6 +375,7 @@ void print_results(const std::vector<SwimRecord>& swim_records) {
 
 }  // namespace
 
+// 입력 이미지의 OCR을 수행하고 수영 기록을 분석해 출력합니다.
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::cerr << "사용법: " << argv[0] << " <이미지 경로>\n";
