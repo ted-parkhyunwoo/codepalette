@@ -1,5 +1,3 @@
-
-
 import argparse
 import re
 import warnings
@@ -9,19 +7,32 @@ from typing import cast
 
 import cv2
 import pytesseract
-from pytesseract import Output
 
-SwimRecord = list[int | str | float | timedelta]
+#! cv2 는 본인의 테스트 환경에서 .venv 로 실행해야 사용할 수 있는 상태가 보통임
+
+# swim_records (리스트) 형식으로 데이터를 다룸 (구조체 느낌)
+# [35, '평영', datetime.timedelta(seconds=25, microseconds=200000), 0.0]
+SwimRecord = list[int | str | timedelta | float]
+
 TESSDATA_DIR = Path(__file__).resolve().parent / "tessdata_for_samsung_health"
+LAP_NUMBER_PATTERN = re.compile(r"^(\d+)")
+TIME_PATTERN = re.compile(r"(\d+):(\d{2}(?:\.\d+)?)")
+STROKE_PREFIXES = (
+    ("자", "자유"),
+    ("접", "접영"),
+    ("배", "배영"),
+    ("평", "평영"),
+    ("H", "배영"),
+    ("킥", "킥판"),
+    ("혼", "혼영"),
+)
 
-
+# 이미지를 전처리하고 Tesseract에서 인식한 텍스트를 반환함
 def extract_image(image_path):
     image = cv2.imread(str(image_path))
 
     if image is None:
         raise ValueError(f"이미지를 읽을 수 없습니다: {image_path}")
-
-    height, width = image.shape[:2]
 
     # OCR 인식률을 높이기 위한 전처리
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -30,95 +41,16 @@ def extract_image(image_path):
         interpolation=cv2.INTER_CUBIC
     )
 
-    # 한국어와 영어, 숫자를 함께 인식
-    data = pytesseract.image_to_data(
+    text = pytesseract.image_to_string(
         gray,
         lang="kor+eng",
         config=f'--tessdata-dir "{TESSDATA_DIR}" --psm 6',
-        output_type=Output.DICT
     )
 
-    words = []
+    return text.splitlines()
 
-    for i, text in enumerate(data["text"]):
-        text = text.strip()
 
-        if not text:
-            continue
-
-        # 전처리로 1.5배 확대했으므로 원본 좌표로 환산
-        scale = 1.5
-        x = round(data["left"][i] / scale)
-        y = round(data["top"][i] / scale)
-        h = round(data["height"][i] / scale)
-
-        words.append({
-            "text": text,
-            "x": x,
-            "y": y,
-            "height": h,
-        })
-
-    # 글자의 세로 중심을 기준으로 행 분류
-    sorted_words = sorted(
-        words,
-        key=lambda word: word["y"] + word["height"] / 2
-    )
-
-    lines = []
-
-    for word in sorted_words:
-        center_y = word["y"] + word["height"] / 2
-
-        # 글자 크기를 고려해 같은 행인지 판단
-        threshold = max(8, word["height"] * 0.65)
-
-        matched_line = None
-
-        for line in reversed(lines):
-            if center_y - line["center_y"] > threshold:
-                break
-
-            if abs(center_y - line["center_y"]) <= threshold:
-                matched_line = line
-                break
-
-        if matched_line is None:
-            lines.append({
-                "center_y": center_y,
-                "words": [word]
-            })
-        else:
-            matched_line["words"].append(word)
-
-            # 행의 중심을 갱신
-            matched_line["center_y"] = sum(
-                w["y"] + w["height"] / 2
-                for w in matched_line["words"]
-            ) / len(matched_line["words"])
-
-    # 행 내부는 왼쪽에서 오른쪽 순서로 정렬
-    result_lines = []
-
-    for line in lines:
-        line_words = sorted(line["words"], key=lambda w: w["x"])
-
-        result_lines.append({
-            "y": round(line["center_y"]),
-            "text": " ".join(w["text"] for w in line_words),
-            "words": line_words
-        })
-
-    return {
-        "source": str(image_path),
-        "image_size": {
-            "width": width,
-            "height": height
-        },
-        "words": words,
-        "lines": result_lines
-    }
-
+# OCR 행을 수영 기록 목록으로 변환함
 def fix_swim_record_string_for_samsung_health(
     ocr_lines: list[str],
 ) -> list[SwimRecord]:
@@ -128,15 +60,17 @@ def fix_swim_record_string_for_samsung_health(
     passed_num = False
 
     for line in ocr_lines:
+
+        # 처음은 숫자가 나올때 까지 보류해버림(랩번호로 추정되는 것이 나올 때 까지)
         s = line.strip()
         if s and s[0].isdigit():
             passed_num = True
         if not passed_num or not s:
             continue
 
-        lap_match = re.match(r"(\d+)", s)
+        lap_match = LAP_NUMBER_PATTERN.match(s)
         if lap_match:
-            time_match = re.search(r"(\d+):(\d{2}(?:\.\d+)?)", s[lap_match.end():])
+            time_match = TIME_PATTERN.search(s, lap_match.end())
             if time_match is None:
                 warnings.warn(
                     f"랩 시간 OCR을 해석하지 못했습니다: {s!r}",
@@ -144,23 +78,16 @@ def fix_swim_record_string_for_samsung_health(
                 )
                 continue
 
-            time_start = lap_match.end() + time_match.start()
-            stroke = re.sub(r"\s+", "", s[lap_match.end():time_start])
-            if stroke.startswith("자"):
-                stroke = "자유"
-            elif stroke.startswith("접"):
-                stroke = "접영"
-            elif stroke.startswith("배"):
-                stroke = "배영"
-            elif stroke.startswith("평"):
-                stroke = "평영"
-            # 특수 보정
-            elif stroke.startswith("H"):
-                stroke = "배영"
-            elif stroke.startswith("킥"):
-                stroke = "킥판"
-            elif stroke.startswith("혼"):
-                stroke = "혼영"
+            stroke_text = re.sub(
+                r"\s+", "", s[lap_match.end():time_match.start()]
+            )
+            stroke = next(
+                (
+                    name for prefix, name in STROKE_PREFIXES
+                    if stroke_text.startswith(prefix)
+                ),
+                "????",
+            )
 
             lap_time = timedelta(
                 minutes=int(time_match.group(1)),
@@ -175,7 +102,7 @@ def fix_swim_record_string_for_samsung_health(
             swim_records.append(record)
             last_swim_record = record
         else:
-            rest_match = re.search(r"(\d+):(\d{2}(?:\.\d+)?)", s)
+            rest_match = TIME_PATTERN.search(s)
             if rest_match:
                 if last_swim_record is None:
                     warnings.warn(
@@ -196,48 +123,74 @@ def fix_swim_record_string_for_samsung_health(
 
     return swim_records
 
-def im_finder(swim_records:list):
 
-    #[35, '평영', datetime.timedelta(seconds=25, microseconds=200000), 0.0]
-    # int, str, timedelta, float 타입으로 저장됨
+# 랩별 기록을 출력하고 총계와 누락 여부를 알림
+def print_swim_records(swim_records: list[SwimRecord]) -> None:
+    if not swim_records:
+        print("수영 기록을 찾을 수 없습니다.")
+        return
+
+    total_rest = 0
+    total_rest_sec = 0.0
+    start_lap_num = cast(int, swim_records[0][0])
+    lap_warning = False
+
+    for counter, swim_record in enumerate(swim_records):
+        lap_number, stroke, lap_time, rest_time = cast(
+            tuple[int, str, timedelta, float],
+            swim_record,
+        )
+
+        if not lap_warning and lap_number != start_lap_num + counter:
+            lap_warning = True
+
+        lap_seconds = lap_time.total_seconds()
+        rest_display = f"{rest_time:.1f}" if rest_time else ""
+        print(f"{lap_number}: {stroke} {lap_seconds:.3f} {rest_display}")
+
+        if rest_time > 0:
+            total_rest += 1
+            total_rest_sec += rest_time
+
+    total_lap = len(swim_records)
+    print(
+        f"\t-> Total lap: {total_lap}  Rest: {total_rest}  "
+        f"Rest seconds: {total_rest_sec:.1f}"
+    )
+
+    print()
+    if lap_warning:
+        print("[경고]누락된 랩이 있을 수 있음")
 
 
-    #! 접배평자로 입력된 것만 검사.
-    #TODO 만약 랩타임을 알고있다면 시작~끝만 입력받아서 계산하도록 만들어도 될듯
+# 연속된 접배평자 랩을 찾아 IM100 기록을 출력함
+def im_finder(swim_records: list[SwimRecord]) -> None:
+    sessions: list[tuple[int, tuple[timedelta, ...]]] = []
+    strokes = ("접", "배", "평", "자")
 
-    last_index = len(swim_records)
+    for start in range(len(swim_records) - len(strokes) + 1):
+        laps = swim_records[start:start + len(strokes)]
+        if tuple(cast(str, lap[1])[0] for lap in laps) != strokes:
+            continue
 
-    i = 0
-    im_start_idx = [] #! 랩번호가 아니라 인덱스임에 주의
-    while i < last_index:
-        if swim_records[i][1][0] == '접':
-            if i + 3 <= last_index and swim_records[i + 1][1][0] == '배' and swim_records[i + 2][1][0] == '평' and swim_records[i + 3][1][0] == "자":
-                im_start_idx.append(i)
-                i += 3
-                continue
-        i += 1
+        lap_number = cast(int, laps[0][0])
+        lap_times = tuple(cast(timedelta, lap[2]) for lap in laps)
+        sessions.append((lap_number, lap_times))
 
-    result:dict = {}
-    i = 1
-    for j in im_start_idx:
-        res = timedelta()
-        this_session_record = []
-        for k in range(4):
-            res += swim_records[j + k][2]
-            this_session_record.append(swim_records[j + k][2])
-        result[i] = [res.total_seconds()]
-        result[i].extend([e.total_seconds() for e in this_session_record])
-        i += 1
-
-    if not result:
+    if not sessions:
         print("수행된 im100 세션을 찾을 수 없습니다.")
         return
 
-    print(f"im100 세션 {i-1}개를 찾았습니다.")
-    for key in result.keys():
-        print(f"{key}번 세션: {result[key][0]}s {[s for s in result[key][1:]]}")
-    
+    print(f"im100 세션 기록 {len(sessions)}개를 찾았습니다.")
+    for number, (lap_number, lap_times) in enumerate(sessions, start=1):
+        total_seconds = sum(lap_times, timedelta()).total_seconds()
+        splits = ", ".join(str(lap.total_seconds()) for lap in lap_times)
+        print(
+            f"{number}세션: {total_seconds}s ({splits}) "
+            f"랩: {lap_number} - {lap_number + 3}"
+        )
 
+# 이미지에서 수영 기록을 읽고 결과를 출력함
 def main():
     parser = argparse.ArgumentParser(
         description="수영 기록 이미지 OCR 추출"
@@ -246,46 +199,14 @@ def main():
     args = parser.parse_args()
 
     image_path = Path(args.image)
-    result = extract_image(image_path)
-
-    ocr_lines = [line["text"] for line in result["lines"]]
-    swim_records:list = (
+    ocr_lines = extract_image(image_path)
+    swim_records: list[SwimRecord] = (
         fix_swim_record_string_for_samsung_health(ocr_lines)
     )
 
-    total_lap, total_rest, total_rest_sec = 0, 0, 0
-    start_lap_num = int(swim_records[0][0]) # type: ignore
-    counter = 0 #idx 카운터 (누락랩 검사용)
-    lap_warning = False # 누락된 랩 경고
-    for swim_record in swim_records:
-        # swim_record = list type.
-        lap_number, stroke, lap_time, rest_time = cast(
-            tuple[int, str, timedelta, float],
-            swim_record,
-        )
-
-        if not lap_warning and (lap_number != start_lap_num + counter):
-            lap_warning = True
-        counter += 1
-
-        lap_seconds = lap_time.total_seconds()
-        rest_display = f"{rest_time:.1f}" if rest_time else ""
-        print(f"{lap_number} {stroke} {lap_seconds:.3f} {rest_display}")
-        total_lap += 1
-
-        if rest_time > 0:
-            total_rest += 1
-            total_rest_sec += rest_time
-        # print(swim_record)
-        #[35, '평영', datetime.timedelta(seconds=25, microseconds=200000), 0.0]
-        # int, str, timedelta, float 타입으로 저장됨
-
-    print(f'\t-> Total lap: {total_lap}  Rest: {total_rest}  Rest seconds: {total_rest_sec:.1f}')
-
-    print() # 빈 라인 출력
-    if lap_warning:
-        print("[경고]누락된 랩이 있을 수 있음")
-
+    # 랩타임 누락검사/랩출력
+    print_swim_records(swim_records)
+    # im100 연속기록 찾기
     im_finder(swim_records)
 
 if __name__ == "__main__":

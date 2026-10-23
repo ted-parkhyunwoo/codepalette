@@ -1,0 +1,1 @@
+tesseract [filename] stdout -l eng+kor --psm 6

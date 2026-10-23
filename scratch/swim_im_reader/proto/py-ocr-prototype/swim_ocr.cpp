@@ -1,36 +1,21 @@
-#include <algorithm>
 #include <cctype>
-#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <regex>
+#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <tesseract/baseapi.h>
-#include <tesseract/pageiterator.h>
 
 namespace {
 
 constexpr double kScale = 1.5;
-
-struct Word {
-    std::string text;
-    int x;
-    int y;
-    int height;
-
-    // OCR 좌표로부터 단어의 세로 중심 위치를 계산합니다.
-    double center_y() const {
-        return y + height / 2.0;
-    }
-};
 
 struct SwimRecord {
     int lap_number;
@@ -39,21 +24,7 @@ struct SwimRecord {
     double rest_seconds = 0.0;
 };
 
-// Python의 round와 같은 반올림 규칙으로 좌표를 정수화합니다.
-double round_like_python(double value) {
-    return std::nearbyint(value);
-}
-
-// 한 행에 속한 단어들의 평균 세로 중심을 계산합니다.
-double line_center_y(const std::vector<Word>& words) {
-    double center_sum = 0.0;
-    for (const Word& word : words) {
-        center_sum += word.center_y();
-    }
-    return center_sum / words.size();
-}
-
-// 이미지에서 한국어·영어 텍스트를 인식하고 단어들을 행 단위 문자열로 반환합니다.
+// 이미지 전처리 후 Tesseract가 인식한 행 문자열을 반환합니다.
 std::vector<std::string> extract_lines(const std::string& image_path) {
     const cv::Mat image = cv::imread(image_path);
     if (image.empty()) {
@@ -87,96 +58,24 @@ std::vector<std::string> extract_lines(const std::string& image_path) {
         throw std::runtime_error("Tesseract OCR에 실패했습니다.");
     }
 
-    std::vector<Word> words;
-    std::unique_ptr<tesseract::ResultIterator> iterator(api.GetIterator());
-    if (iterator) {
-        do {
-            std::unique_ptr<char[]> text(iterator->GetUTF8Text(tesseract::RIL_WORD));
-            if (!text) {
-                continue;
-            }
-
-            std::string word_text(text.get());
-            const auto first = word_text.find_first_not_of(" \t\n\r\f\v");
-            if (first == std::string::npos) {
-                continue;
-            }
-            const auto last = word_text.find_last_not_of(" \t\n\r\f\v");
-            word_text = word_text.substr(first, last - first + 1);
-
-            int left = 0;
-            int top = 0;
-            int right = 0;
-            int bottom = 0;
-            if (!iterator->BoundingBox(
-                    tesseract::RIL_WORD,
-                    &left,
-                    &top,
-                    &right,
-                    &bottom
-                )) {
-                continue;
-            }
-
-            words.push_back({
-                word_text,
-                static_cast<int>(round_like_python(left / kScale)),
-                static_cast<int>(round_like_python(top / kScale)),
-                static_cast<int>(round_like_python((bottom - top) / kScale)),
-            });
-        } while (iterator->Next(tesseract::RIL_WORD));
-    }
-
-    std::stable_sort(
-        words.begin(),
-        words.end(),
-        [](const Word& lhs, const Word& rhs) {
-            return lhs.center_y() < rhs.center_y();
-        }
-    );
-
-    std::vector<std::vector<Word>> lines;
-    for (const Word& word : words) {
-        const double center_y = word.center_y();
-        const double threshold = std::max(8.0, word.height * 0.65);
-        auto matched = lines.rend();
-        for (auto line = lines.rbegin(); line != lines.rend(); ++line) {
-            const double line_center = line_center_y(*line);
-            if (center_y - line_center > threshold) {
-                break;
-            }
-            if (std::abs(center_y - line_center) <= threshold) {
-                matched = line;
-                break;
-            }
-        }
-
-        if (matched == lines.rend()) {
-            lines.push_back({word});
-            continue;
-        }
-
-        matched->push_back(word);
+    std::unique_ptr<char[]> recognized_text(api.GetUTF8Text());
+    if (!recognized_text) {
+        throw std::runtime_error("Tesseract OCR 결과를 가져오지 못했습니다.");
     }
 
     std::vector<std::string> result;
-    result.reserve(lines.size());
-    for (std::vector<Word>& line : lines) {
-        std::stable_sort(
-            line.begin(),
-            line.end(),
-            [](const Word& lhs, const Word& rhs) {
-                return lhs.x < rhs.x;
-            }
-        );
-        std::string text;
-        for (const Word& word : line) {
-            if (!text.empty()) {
-                text += ' ';
-            }
-            text += word.text;
+    std::string text(recognized_text.get());
+    std::size_t line_start = 0;
+    while (line_start < text.size()) {
+        const std::size_t line_end = text.find('\n', line_start);
+        result.push_back(text.substr(
+            line_start,
+            line_end == std::string::npos ? line_end : line_end - line_start
+        ));
+        if (line_end == std::string::npos) {
+            break;
         }
-        result.push_back(std::move(text));
+        line_start = line_end + 1;
     }
     return result;
 }
@@ -255,6 +154,8 @@ std::vector<SwimRecord> fix_swim_record_string_for_samsung_health(
                 stroke = "킥판";
             } else if (stroke.rfind("혼", 0) == 0) {
                 stroke = "혼영";
+            } else {
+                stroke = "????";
             }
 
             const int minutes = std::stoi(time_match[1].str());
@@ -287,12 +188,12 @@ std::vector<SwimRecord> fix_swim_record_string_for_samsung_health(
     return swim_records;
 }
 
-// 접영-배영-평영-자유형 순서로 이어지는 IM100 세션의 시작 인덱스를 찾습니다.
+// 연속된 접배평자 랩을 찾아 IM100 기록을 출력합니다.
 std::vector<std::size_t> find_im_session_starts(
     const std::vector<SwimRecord>& swim_records
 ) {
     std::vector<std::size_t> session_starts;
-    for (std::size_t i = 0; i + 3 < swim_records.size(); ++i) {
+    for (std::size_t i = 0; i + 4 <= swim_records.size(); ++i) {
         if (
             swim_records[i].stroke.rfind("접", 0) == 0 &&
             swim_records[i + 1].stroke.rfind("배", 0) == 0 &&
@@ -300,15 +201,32 @@ std::vector<std::size_t> find_im_session_starts(
             swim_records[i + 3].stroke.rfind("자", 0) == 0
         ) {
             session_starts.push_back(i);
-            i += 3;
         }
     }
 
     return session_starts;
 }
 
-// 랩·휴식 통계와 감지된 IM100 세션을 콘솔에 출력합니다.
+// 숫자를 불필요한 0 없이 문자열로 변환합니다.
+std::string format_number(double value) {
+    std::ostringstream output;
+    output << std::setprecision(15) << value;
+    std::string result = output.str();
+    if (result.find('.') == std::string::npos &&
+        result.find('e') == std::string::npos) {
+        result += ".0";
+    }
+    return result;
+}
+
+// 랩별 기록과 총계 및 누락 여부를 출력합니다.
 void print_results(const std::vector<SwimRecord>& swim_records) {
+    if (swim_records.empty()) {
+        std::cout << "수영 기록을 찾을 수 없습니다.\n";
+        std::cout << "수행된 im100 세션을 찾을 수 없습니다.\n";
+        return;
+    }
+
     int total_rest = 0;
     double total_rest_seconds = 0.0;
     bool lap_warning = false;
@@ -325,10 +243,10 @@ void print_results(const std::vector<SwimRecord>& swim_records) {
             lap_warning = true;
         }
 
-        std::cout << record.lap_number << ' '
+        std::cout << record.lap_number << ": "
                   << record.stroke << ' '
-                  << std::fixed << std::setprecision(3)
-                  << record.lap_seconds << ' ';
+                  << std::fixed << std::setprecision(3) << record.lap_seconds
+                  << ' ';
         if (record.rest_seconds != 0.0) {
             std::cout << std::setprecision(1) << record.rest_seconds;
             ++total_rest;
@@ -353,23 +271,29 @@ void print_results(const std::vector<SwimRecord>& swim_records) {
         return;
     }
 
-    std::cout << "im100 세션 " << session_starts.size()
+    std::cout << "im100 세션 기록 " << session_starts.size()
               << "개를 찾았습니다.\n";
     for (std::size_t index = 0; index < session_starts.size(); ++index) {
         const std::size_t start = session_starts[index];
         double total_seconds = 0.0;
+        std::vector<double> lap_seconds;
+        lap_seconds.reserve(4);
         for (std::size_t offset = 0; offset < 4; ++offset) {
-            total_seconds += swim_records[start + offset].lap_seconds;
+            const double seconds = swim_records[start + offset].lap_seconds;
+            total_seconds += seconds;
+            lap_seconds.push_back(seconds);
         }
 
-        std::cout << index + 1 << "번 세션: " << total_seconds << "s [";
-        for (std::size_t offset = 0; offset < 4; ++offset) {
+        std::cout << index + 1 << "세션: " << format_number(total_seconds)
+                  << "s (";
+        for (std::size_t offset = 0; offset < lap_seconds.size(); ++offset) {
             if (offset > 0) {
                 std::cout << ", ";
             }
-            std::cout << swim_records[start + offset].lap_seconds;
+            std::cout << format_number(lap_seconds[offset]);
         }
-        std::cout << "]\n";
+        std::cout << ") 랩: " << swim_records[start].lap_number
+                  << " - " << swim_records[start].lap_number + 3 << '\n';
     }
 }
 
