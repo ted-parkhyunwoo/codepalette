@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable, dead_code
+
 void main(List<String> args) {
 
   // List요소로 if문을 쓸 수 있음...
