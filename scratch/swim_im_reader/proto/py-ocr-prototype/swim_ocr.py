@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import cast
 
 import cv2              # pip install opencv-python
-import pytesseract      # pip install pytesseract
+import pytesseract      # pip install pytesseract, sudo apt install tesseract-ocr tesseract-ocr-kor
 
 #! cv2 는 본인의 테스트 환경에서 .venv 로 실행해야 사용할 수 있는 상태가 보통임
 
