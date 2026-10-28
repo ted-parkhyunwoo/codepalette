@@ -11,10 +11,16 @@ python용 프로토타입에서 사용시 설치해야할 라이브러리
 pip install pytesseract opencv-python
 
 
-python swim_ocr.py test_samples/samsung_health_swim_laps.jpg
+python swim_ocr.py test_samples/01.jpg
+python swim_ocr.py test_samples/01.jpg 50
 
-인식된 행 문자열 목록과 Samsung Health 수영 기록이 terminal에 출력되며,
-결과는 별도 파일로 저장되지 않음
+`swim_ocr.py`가 OCR과 수영 기록 평가를 함께 수행하며,
+결과는 별도 파일로 저장되지 않음. 수영장 길이를 생략하면 25m로 계산하고,
+두 번째 인자로 길이를 지정할 수 있음. `swim_ocr.py`의 `PRINT_...` 상수를
+각각 `True`/`False`로 바꿔 OCR 원문, 정돈된 수영 기록,
+IM 기록평가, 영법별 기록평가의 출력을 독립적으로 켜고 끌 수 있음.
+OCR 원문 출력은 기본 `False`이며, 나머지는 기본 `True`임. 출력을 꺼도
+파싱과 평가는 항상 수행됨. IM 기록평가를 먼저 출력한 뒤 영법별 기록평가를 출력함.
 
 ## C++ 버전
 
@@ -29,7 +35,11 @@ sudo apt install g++ cmake libopencv-dev libtesseract-dev tesseract-ocr
 ```bash
 cmake -S . -B build
 cmake --build build
-./build/swim_ocr_cpp test_samples/samsung_health_swim_laps.jpg
+./build/swim_ocr_cpp test_samples/01.jpg
+./build/swim_ocr_cpp test_samples/01.jpg 50
 ```
 
+기본 수영장 길이는 25m이며, 두 번째 인자로 길이를 지정할 수 있음.
+출력 스위치는 `swim_ocr.cpp`의 `kPrint...` 상수를 수정함.
+Python과 C++ 모두 인식 원문, 정돈된 기록, IM 평가, 영법별 평가를 개별 출력하며,
 샘플 이미지는 `test_samples/` 디렉터리에 있습니다.
