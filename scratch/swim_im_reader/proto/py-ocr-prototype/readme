@@ -1,36 +1,53 @@
-테서렉트 ocr 활용
+# Samsung Health 수영 기록 OCR 및 평가
 
-sudo apt install tesseract-ocr
+Samsung Health 수영 기록 이미지에서 랩, 영법, 기록 시간, 휴식 시간을
+OCR로 읽고 수영 기록과 영법별 평가를 출력하는 Python·C++ 프로토타입입니다.
+결과는 터미널에 출력되며 파일로 저장되지 않습니다.
 
-OCR에는 프로젝트의 `tessdata_for_samsung_health/kor.traineddata`와
-`eng.traineddata`를 사용합니다.
+## 요구 사항
 
+### 공통
 
-//! python 프로토타입은 오롯이 gpt가 작성
-python용 프로토타입에서 사용시 설치해야할 라이브러리
-pip install pytesseract opencv-python
-
-
-python swim_ocr.py test_samples/01.jpg
-python swim_ocr.py test_samples/01.jpg 50
-
-`swim_ocr.py`가 OCR과 수영 기록 평가를 함께 수행하며,
-결과는 별도 파일로 저장되지 않음. 수영장 길이를 생략하면 25m로 계산하고,
-두 번째 인자로 길이를 지정할 수 있음. `swim_ocr.py`의 `PRINT_...` 상수를
-각각 `True`/`False`로 바꿔 OCR 원문, 정돈된 수영 기록,
-IM 기록평가, 영법별 기록평가의 출력을 독립적으로 켜고 끌 수 있음.
-OCR 원문 출력은 기본 `False`이며, 나머지는 기본 `True`임. 출력을 꺼도
-파싱과 평가는 항상 수행됨. IM 기록평가를 먼저 출력한 뒤 영법별 기록평가를 출력함.
-
-## C++ 버전
-
-필요한 패키지 설치:
+Tesseract OCR 실행 파일이 필요합니다. Debian/Ubuntu에서는 다음과 같이
+설치할 수 있습니다.
 
 ```bash
-sudo apt install g++ cmake libopencv-dev libtesseract-dev tesseract-ocr
+sudo apt update
+sudo apt install tesseract-ocr
 ```
 
-빌드 및 실행:
+한국어와 영어 OCR 학습 데이터는
+`tessdata_for_samsung_health/` 디렉터리에 포함되어 있습니다.
+
+### Python
+
+Python 가상 환경을 활성화한 뒤 다음 패키지를 설치합니다.
+
+```bash
+pip install opencv-python pytesseract
+```
+
+### C++
+
+```bash
+sudo apt install g++ cmake libopencv-dev libtesseract-dev
+```
+
+## 실행
+
+모든 명령은 이 디렉터리에서 실행합니다.
+
+### Python
+
+```bash
+python swim_ocr.py test_samples/01.jpg
+python swim_ocr.py test_samples/01.jpg 50
+```
+
+이미지 경로는 필수입니다. 수영장 길이는 미터 단위로 선택 입력할 수 있으며,
+생략하면 25m로 계산합니다. 두 번째 명령은 50m 수영장을 지정한 예입니다.
+
+### C++
 
 ```bash
 cmake -S . -B build
@@ -39,7 +56,28 @@ cmake --build build
 ./build/swim_ocr_cpp test_samples/01.jpg 50
 ```
 
-기본 수영장 길이는 25m이며, 두 번째 인자로 길이를 지정할 수 있음.
-출력 스위치는 `swim_ocr.cpp`의 `kPrint...` 상수를 수정함.
-Python과 C++ 모두 인식 원문, 정돈된 기록, IM 평가, 영법별 평가를 개별 출력하며,
-샘플 이미지는 `test_samples/` 디렉터리에 있습니다.
+## 출력 설정
+
+Python과 C++ 모두 OCR 원문, 정돈된 수영 기록, IM 기록평가,
+영법별 기록평가를 각각 켜고 끌 수 있습니다. 출력을 비활성화해도
+OCR 결과 파싱과 평가 계산은 수행됩니다.
+
+| 출력 | Python 상수 (`swim_ocr.py`) | C++ 상수 (`swim_ocr.cpp`) | 기본값 |
+|---|---|---|---|
+| OCR 원문 행 | `PRINT_OCR_LINES` | `kPrintOcrLines` | `False` |
+| 정돈된 수영 기록 | `PRINT_PARSED_SWIM_RECORDS` | `kPrintParsedRecords` | `True` |
+| IM 기록평가 | `PRINT_IM_EVALUATION` | `kPrintImEvaluation` | `True` |
+| 영법별 기록평가 | `PRINT_STROKE_EVALUATION` | `kPrintStrokeEvaluation` | `True` |
+
+Python에서는 원하는 상수 값을 `True` 또는 `False`로 변경하고,
+C++에서는 `true` 또는 `false`로 변경합니다. C++ 상수를 변경한 경우
+실행 전에 다시 빌드합니다.
+
+기본 출력 순서는 인식된 수영 기록, IM 기록평가, 영법별 기록평가입니다.
+IM은 연속된 접영·배영·평영·자유형 랩을 한 세션으로 평가합니다.
+영법별 기록평가에는 랩 수, 거리, 기록 시간, 100m 페이스, 휴식 횟수와
+휴식 총시간이 표시됩니다. 시간은 초 단위 소수 첫째 자리까지 표시합니다.
+
+## 샘플 이미지
+
+`test_samples/` 디렉터리에 테스트 이미지가 있습니다.
