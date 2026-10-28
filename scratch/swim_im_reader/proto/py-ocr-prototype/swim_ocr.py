@@ -14,6 +14,10 @@ import pytesseract      # pip install pytesseract, sudo apt install tesseract-oc
 # [35, '평영', datetime.timedelta(seconds=25, microseconds=200000), 0.0]
 SwimRecord = list[int | str | timedelta | float]
 
+#TODO 영법별 랩수, 페이스 등 기록할 데이터클래스같은 dict작성
+#TODO eval 함수 작성 -> 데이터로 리턴
+#TODO im100 평가도 데이터로 리턴하는 방향, 출력함수 분리
+
 TESSDATA_DIR = Path(__file__).resolve().parent / "tessdata_for_samsung_health"
 LAP_NUMBER_PATTERN = re.compile(r"^(\d+)")
 TIME_PATTERN = re.compile(r"(\d+):(\d{2}(?:\.\d+)?)")
@@ -202,7 +206,8 @@ idea note.
 
 '''
 
-def test():
+def eval_record():
+    res = {"bu": [], "ba": [], "br": [], "fr": [], "kick":[], "im100": [], }
     pass
 
 
