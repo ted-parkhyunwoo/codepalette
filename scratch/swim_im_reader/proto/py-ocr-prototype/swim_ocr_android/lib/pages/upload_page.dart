@@ -7,10 +7,12 @@ import '../pages/results_pages.dart';
 import '../services/swim_ocr_service.dart';
 import '../swim_data.dart';
 
-Color _ink(BuildContext context) => Theme.of(context).colorScheme.onSurface;
+Color _ink(BuildContext context) =>
+    Theme.of(context).colorScheme.onSurface;
 Color _muted(BuildContext context) =>
     Theme.of(context).colorScheme.onSurfaceVariant;
-Color _accent(BuildContext context) => Theme.of(context).colorScheme.primary;
+Color _accent(BuildContext context) =>
+    Theme.of(context).colorScheme.primary;
 Color _secondary(BuildContext context) =>
     Theme.of(context).colorScheme.tertiary;
 Color _softSurface(BuildContext context) =>
@@ -35,6 +37,7 @@ class _UploadPageState extends State<UploadPage> {
   bool _disableIm100Inference = false;
   bool _includePaceOutlierLaps = false;
   bool _finSwimmingIncluded = false;
+  bool _longCoursePool = false;
 
   @override
   void initState() {
@@ -115,6 +118,7 @@ class _UploadPageState extends State<UploadPage> {
     bool? disableIm100Inference,
     bool? includePaceOutlierLaps,
     bool? finSwimmingIncluded,
+    bool? longCoursePool,
   }) {
     final analysis = _analysis;
     setState(() {
@@ -127,6 +131,9 @@ class _UploadPageState extends State<UploadPage> {
       if (finSwimmingIncluded != null) {
         _finSwimmingIncluded = finSwimmingIncluded;
       }
+      if (longCoursePool != null) {
+        _longCoursePool = longCoursePool;
+      }
       if (analysis != null) {
         _analysis = _applyAnalysisOptions(analysis);
       }
@@ -136,7 +143,7 @@ class _UploadPageState extends State<UploadPage> {
   SwimAnalysis _applyAnalysisOptions(SwimAnalysis analysis) {
     return analyzeSwimText(
       analysis.recognizedLines.join('\n'),
-      poolLengthMeters: analysis.poolLengthMeters,
+      poolLengthMeters: _longCoursePool ? 50 : 25,
       inferIm100: !_disableIm100Inference,
       excludePaceOutliers: !_includePaceOutlierLaps,
       finSwimmingIncluded: _finSwimmingIncluded,
@@ -176,15 +183,15 @@ class _UploadPageState extends State<UploadPage> {
                 icon: Icons.table_rows_rounded,
                 title: '모든 기록',
                 subtitle: '${analysis.records.length}개 랩 기록',
-                onTap: () =>
-                    _pushResult(context, AllRecordsPage(analysis: analysis)),
+                onTap: () => _pushResult(
+                    context, AllRecordsPage(analysis: analysis)),
               ),
               _ResultChoice(
                 icon: Icons.swap_vert_rounded,
                 title: 'IM ${analysis.poolLengthMeters * 4} 찾기',
                 subtitle: '${analysis.imRecords.length}개 IM 세션',
-                onTap: () =>
-                    _pushResult(context, ImEvaluationPage(analysis: analysis)),
+                onTap: () => _pushResult(
+                    context, ImEvaluationPage(analysis: analysis)),
               ),
               _ResultChoice(
                 icon: Icons.insights_rounded,
@@ -205,7 +212,8 @@ class _UploadPageState extends State<UploadPage> {
   /// Replaces the result chooser with the selected results page.
   void _pushResult(BuildContext context, Widget page) {
     Navigator.pop(context);
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => page));
   }
 
   @override
@@ -227,12 +235,15 @@ class _UploadPageState extends State<UploadPage> {
             disableIm100Inference: _disableIm100Inference,
             includePaceOutlierLaps: _includePaceOutlierLaps,
             finSwimmingIncluded: _finSwimmingIncluded,
+            longCoursePool: _longCoursePool,
             onDisableIm100InferenceChanged: (value) =>
                 _updateAnalysisOptions(disableIm100Inference: value),
             onIncludePaceOutlierLapsChanged: (value) =>
                 _updateAnalysisOptions(includePaceOutlierLaps: value),
             onFinSwimmingIncludedChanged: (value) =>
                 _updateAnalysisOptions(finSwimmingIncluded: value),
+            onLongCoursePoolChanged: (value) =>
+                _updateAnalysisOptions(longCoursePool: value),
           ),
           const SizedBox(height: 18),
           FilledButton.icon(
@@ -242,7 +253,8 @@ class _UploadPageState extends State<UploadPage> {
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(56),
               backgroundColor: _accent(context),
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              foregroundColor:
+                  Theme.of(context).colorScheme.onPrimary,
               textStyle: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -261,8 +273,8 @@ class _UploadPageState extends State<UploadPage> {
             _ErrorCard(message: message),
           ],
           if (_image != null && !_isProcessing) ...[
-            const SizedBox(height: 18),
-            _UploadedImageCard(image: _image!),
+            const SizedBox(height: 12),
+            _UploadedImageButton(image: _image!),
           ],
           if (analysis != null && !_isProcessing) ...[
             const SizedBox(height: 14),
@@ -275,7 +287,8 @@ class _UploadPageState extends State<UploadPage> {
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(56),
                 backgroundColor: _secondary(context),
-                foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                foregroundColor:
+                    Theme.of(context).colorScheme.onTertiary,
                 textStyle: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -298,17 +311,21 @@ class _AnalysisOptionsCard extends StatelessWidget {
     required this.disableIm100Inference,
     required this.includePaceOutlierLaps,
     required this.finSwimmingIncluded,
+    required this.longCoursePool,
     required this.onDisableIm100InferenceChanged,
     required this.onIncludePaceOutlierLapsChanged,
     required this.onFinSwimmingIncludedChanged,
+    required this.onLongCoursePoolChanged,
   });
 
   final bool disableIm100Inference;
   final bool includePaceOutlierLaps;
   final bool finSwimmingIncluded;
+  final bool longCoursePool;
   final ValueChanged<bool> onDisableIm100InferenceChanged;
   final ValueChanged<bool> onIncludePaceOutlierLapsChanged;
   final ValueChanged<bool> onFinSwimmingIncludedChanged;
+  final ValueChanged<bool> onLongCoursePoolChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +338,7 @@ class _AnalysisOptionsCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: Text(
-                '분석 옵션 · Android 전용',
+                '분석 옵션',
                 style: TextStyle(
                   color: _ink(context),
                   fontSize: 16,
@@ -352,7 +369,17 @@ class _AnalysisOptionsCard extends StatelessWidget {
               onChanged: (value) =>
                   onFinSwimmingIncludedChanged(value ?? false),
               title: const Text('핀수영 포함'),
-              subtitle: const Text('페이스 이상치 제외 기준을 1.7배에서 2.5배로 완화합니다.'),
+              subtitle:
+                  const Text('페이스 이상치 제외 기준을 1.7배에서 2.5배로 완화합니다.'),
+              controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
+            ),
+            CheckboxListTile(
+              value: longCoursePool,
+              onChanged: (value) =>
+                  onLongCoursePoolChanged(value ?? false),
+              title: const Text('50m 풀장으로 분석'),
+              subtitle: const Text('선택하지 않으면 기본 25m 풀장으로 분석합니다.'),
               controlAffinity: ListTileControlAffinity.leading,
               dense: true,
             ),
@@ -467,9 +494,9 @@ class _ErrorCard extends StatelessWidget {
   }
 }
 
-/// Shows a preview that opens the source image in a dedicated zoomable viewer.
-class _UploadedImageCard extends StatelessWidget {
-  const _UploadedImageCard({required this.image});
+/// Opens the source image in a dedicated viewer without an inline preview.
+class _UploadedImageButton extends StatelessWidget {
+  const _UploadedImageButton({required this.image});
 
   final File image;
 
@@ -484,57 +511,16 @@ class _UploadedImageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 15, 16, 11),
-            child: Text(
-              '업로드한 사진',
-              style: TextStyle(
-                color: _ink(context),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _openImage(context),
+            icon: const Icon(Icons.image_outlined),
+            label: const Text('업로드한 사진 보기'),
           ),
-          InkWell(
-            onTap: () => _openImage(context),
-            child: Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 230),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Image.file(
-                      image,
-                      fit: BoxFit.contain,
-                      alignment: Alignment.center,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.zoom_in,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -593,6 +579,24 @@ class _AnalysisSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final paceRecords =
+        analysis.records.where((record) => !record.paceExcluded);
+    final paceTime = paceRecords.fold<double>(
+        0, (total, record) => total + record.timeSeconds);
+    final paceDistance = paceRecords.fold<int>(
+        0, (total, record) => total + record.distanceMeters);
+    final averagePace = paceDistance == 0
+        ? '없음'
+        : _formatSummaryTime(paceTime * 100 / paceDistance);
+    final averageImTime = analysis.imRecords.isEmpty
+        ? '없음'
+        : _formatSummaryTime(
+            analysis.imRecords.fold<double>(
+                  0,
+                  (total, record) => total + record.timeSeconds,
+                ) /
+                analysis.imRecords.length,
+          );
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(17),
@@ -601,7 +605,8 @@ class _AnalysisSummary extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.check_circle, color: scheme.tertiary, size: 20),
+                Icon(Icons.check_circle,
+                    color: scheme.tertiary, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   '분석 완료',
@@ -614,18 +619,27 @@ class _AnalysisSummary extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            Row(
-              children: [
-                _Metric(label: '랩 기록', value: '${analysis.records.length}'),
-                _Metric(label: '총 거리', value: '${_totalDistance(analysis)}m'),
-                _Metric(label: 'IM 세션', value: '${analysis.imRecords.length}'),
+            _MetricRow(
+              metrics: [
+                ('풀장', '${analysis.poolLengthMeters}m'),
+                ('랩 기록', '${analysis.records.length}'),
+                ('총 거리', '${_totalDistance(analysis)}m'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _MetricRow(
+              metrics: [
+                ('평균 페이스/100m', averagePace),
+                ('IM 세션', '${analysis.imRecords.length}개'),
+                ('IM 세션 평균', averageImTime),
               ],
             ),
             if (analysis.records.isEmpty) ...[
               const SizedBox(height: 12),
               Text(
                 '인식된 기록 없음',
-                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+                style: TextStyle(
+                    color: scheme.onSurfaceVariant, fontSize: 13),
               ),
             ],
           ],
@@ -634,7 +648,30 @@ class _AnalysisSummary extends StatelessWidget {
     );
   }
 
-  int _totalDistance(SwimAnalysis analysis) => analysis.totalDistanceMeters;
+  int _totalDistance(SwimAnalysis analysis) =>
+      analysis.totalDistanceMeters;
+
+  String _formatSummaryTime(double seconds) {
+    return seconds < 60
+        ? seconds.toStringAsFixed(1)
+        : formatDuration(seconds);
+  }
+}
+
+class _MetricRow extends StatelessWidget {
+  const _MetricRow({required this.metrics});
+
+  final List<(String, String)> metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: metrics
+          .map(
+              (metric) => _Metric(label: metric.$1, value: metric.$2))
+          .toList(),
+    );
+  }
 }
 
 /// Displays one label/value pair in the home analysis summary.
@@ -662,7 +699,7 @@ class _Metric extends StatelessWidget {
             value,
             style: TextStyle(
               color: _ink(context),
-              fontSize: 19,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -689,7 +726,8 @@ class _ResultChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       leading: CircleAvatar(
         backgroundColor: _softSurface(context),
         foregroundColor: _accent(context),
@@ -697,7 +735,8 @@ class _ResultChoice extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: TextStyle(color: _ink(context), fontWeight: FontWeight.w700),
+        style: TextStyle(
+            color: _ink(context), fontWeight: FontWeight.w700),
       ),
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right_rounded),
