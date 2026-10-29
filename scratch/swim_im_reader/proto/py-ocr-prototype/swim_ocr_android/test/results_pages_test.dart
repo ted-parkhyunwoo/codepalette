@@ -48,6 +48,33 @@ void main() {
     );
   });
 
+  testWidgets('analysis summary shows missing lap numbers and OCR text',
+      (tester) async {
+    final analysis = analyzeSwimText(
+      '8 자유형 0:20.0\n'
+      '10 자유형 0:21.0\n'
+      '13 자유형 0:22.0',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: AnalysisSummary(analysis: analysis))),
+    );
+
+    expect(find.text('분석 완료'), findsOneWidget);
+    expect(find.text('OCR읽기 실패 추정랩: 3건\n누락번호: 9, 11, 12'), findsOneWidget);
+    expect(find.textContaining('8 자유형 0:20.0'), findsNothing);
+
+    await tester.tap(find.text('원문 보기'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('8 자유형 0:20.0'), findsOneWidget);
+    expect(find.textContaining('13 자유형 0:22.0'), findsOneWidget);
+
+    await tester.tap(find.text('접기'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('8 자유형 0:20.0'), findsNothing);
+  });
+
   testWidgets(
       'IM view names 100m and shows rests for each stroke transition',
       (tester) async {

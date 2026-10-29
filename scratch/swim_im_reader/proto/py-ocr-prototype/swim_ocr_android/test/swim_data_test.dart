@@ -253,6 +253,154 @@ void main() {
       expect(analysis.records[1].timeSeconds, 15);
       expect(analysis.records[1].restSeconds, 17);
       expect(analysis.totalDistanceMeters, 75);
+      expect(analysis.estimatedMissingLapCount, 0);
+      expect(analysis.estimatedMissingLapNumbers, isEmpty);
+    });
+
+    test('parses a lap number preceded by OCR noise', () {
+      final analysis = analyzeSwimText(
+        '30 평영 00:28.1 01\'23"\n'
+        'M 31 평영 00:27.7 01\'51"\n'
+        '32 평영 00:28.0 02\'19"',
+      );
+
+      expect(analysis.records.map((record) => record.lapNumber), [30, 31, 32]);
+      expect(analysis.records[1].stroke, '평영');
+      expect(analysis.records[1].timeSeconds, 27.7);
+    });
+
+    test('finds a stroke surrounded by Korean and English OCR noise', () {
+      final analysis = analyzeSwimText(
+        '30 평영 00:28.1\n'
+        'M 31 noise 평영(추정) abc 00:27.7\n'
+        '32 평영 00:27.8',
+      );
+
+      expect(analysis.records.map((record) => record.lapNumber), [30, 31, 32]);
+      expect(analysis.records[1].stroke, '평영');
+      expect(analysis.records[1].timeSeconds, 27.7);
+    });
+
+    test('refines a missing numbered lap when its stroke appears before number',
+        () {
+      final analysis = analyzeSwimText(
+        '30 평영 00:28.1\n'
+        'noise 평영 M 31 00:27.7\n'
+        '32 평영 00:27.8',
+      );
+
+      expect(analysis.records.map((record) => record.lapNumber), [30, 31, 32]);
+      expect(analysis.records[1].stroke, '평영');
+      expect(analysis.records[1].timeSeconds, 27.7);
+      expect(analysis.estimatedMissingLapNumbers, isEmpty);
+    });
+
+    test('refines a missing lap from stroke text after its time', () {
+      final analysis = analyzeSwimText(
+        '30 평영 00:28.1\n'
+        '31 M 00:27.7 평영 noise\n'
+        'noise 휴식 00:30.6 trailing\n'
+        '32 평영 00:27.8',
+      );
+
+      expect(analysis.records.map((record) => record.lapNumber), [30, 31, 32]);
+      expect(analysis.records[1].stroke, '평영');
+      expect(analysis.records[1].timeSeconds, 27.7);
+      expect(analysis.records[1].restSeconds, 30.6);
+      expect(analysis.records[0].restSeconds, 0);
+      expect(analysis.estimatedMissingLapNumbers, isEmpty);
+    });
+
+    test('attaches a rest line with OCR noise to the preceding lap', () {
+      final analysis = analyzeSwimText(
+        '30 평영 00:28.1 01\'23"\n'
+        'M 31 평영 00:27.7 01\'51"\n'
+        '휴식 야 00:30.6\n'
+        '32 평영 00:27.8 02\'19"',
+      );
+
+      expect(analysis.records, hasLength(3));
+      expect(analysis.records[1].lapNumber, 31);
+      expect(analysis.records[1].restSeconds, 30.6);
+      expect(analysis.records[1].restCount, 1);
+    });
+
+    test('finds rest marker surrounded by Korean and English OCR noise', () {
+      final analysis = analyzeSwimText(
+        '30 평영 00:28.1\n'
+        'noise 휴식 야 rest 00:30.6 trailing\n'
+        '31 평영 00:27.7',
+      );
+
+      expect(analysis.records.first.restSeconds, 30.6);
+      expect(analysis.records.first.restCount, 1);
+      expect(analysis.records, hasLength(2));
+    });
+
+    test('finds a rest marker after its recognized duration', () {
+      final analysis = analyzeSwimText(
+        '30 평영 00:28.1\n'
+        'noise 00:30.6 휴식 trailing\n'
+        '31 평영 00:27.7',
+      );
+
+      expect(analysis.records.first.restSeconds, 30.6);
+      expect(analysis.records.first.restCount, 1);
+      expect(analysis.records, hasLength(2));
+    });
+
+    test('corrects a zero-prefixed lap number from consecutive neighbors', () {
+      final analysis = analyzeSwimText(
+        '30 평영 00:28.1\n'
+        '31 평영 00:28.0\n'
+        '32 평영 00:27.9\n'
+        '03 평영 00:27.7\n'
+        '34 평영 00:27.8',
+      );
+
+      expect(
+        analysis.records.map((record) => record.lapNumber),
+        [30, 31, 32, 33, 34],
+      );
+      expect(analysis.estimatedMissingLapNumbers, isEmpty);
+    });
+
+    test('only corrects zero-prefixed laps to a matching sequence number', () {
+      final analysis = analyzeSwimText(
+        '30 평영 00:28.1\n'
+        '03 평영 00:27.7\n'
+        '35 평영 00:27.8\n'
+        '32 평영 00:27.9\n'
+        '01 평영 00:27.7\n'
+        '34 평영 00:27.8',
+      );
+
+      expect(
+        analysis.records.map((record) => record.lapNumber),
+        [30, 3, 35, 32, 1, 34],
+      );
+    });
+
+    test('counts missing laps between the first and last recognized numbers',
+        () {
+      final analysis = analyzeSwimText(
+        '8 자유형 0:20.0\n'
+        '10 자유형 0:21.0\n'
+        '13 자유형 0:22.0',
+      );
+
+      expect(analysis.estimatedMissingLapCount, 3);
+      expect(analysis.estimatedMissingLapNumbers, [9, 11, 12]);
+    });
+
+    test('does not count laps before the first recognized lap number', () {
+      final analysis = analyzeSwimText(
+        '8 자유형 0:20.0\n'
+        '9 자유형 0:21.0\n'
+        '10 자유형 0:22.0',
+      );
+
+      expect(analysis.estimatedMissingLapCount, 0);
     });
 
     test('keeps all 60 laps and 1500m when OCR misses lap 9 number', () {

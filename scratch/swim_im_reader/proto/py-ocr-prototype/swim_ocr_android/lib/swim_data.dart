@@ -77,6 +77,25 @@ class SwimAnalysis {
   final List<String> recognizedLines;
   final int poolLengthMeters;
   final int totalDistanceMeters;
+
+  /// Counts missing lap numbers between the first and last recognized laps.
+  int get estimatedMissingLapCount {
+    return estimatedMissingLapNumbers.length;
+  }
+
+  /// Lists missing lap numbers between the first and last recognized laps.
+  List<int> get estimatedMissingLapNumbers {
+    if (records.isEmpty) return const [];
+
+    final lapNumbers = records.map((record) => record.lapNumber).toSet();
+    final firstLap =
+        lapNumbers.reduce((first, lap) => lap < first ? lap : first);
+    final lastLap = lapNumbers.reduce((last, lap) => lap > last ? lap : last);
+    return [
+      for (var lap = firstLap; lap <= lastLap; lap++)
+        if (!lapNumbers.contains(lap)) lap,
+    ];
+  }
 }
 
 /// Parses OCR text, detects pool length, and computes activity summaries.
@@ -126,25 +145,38 @@ List<SwimRecord> parseSwimRecords(
   final records = <SwimRecord>[];
   SwimRecord? lastRecord;
   final seenLapNumbers = <int>{};
+  final restLineAttachments = <int, SwimRecord>{};
   final timePattern = RegExp(r'(\d+):(\d{2}(?:\.\d+)?)');
-  final lapPattern = RegExp(r'^\s*(\d+)');
 
   for (var lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     final line = lines[lineIndex].trim();
     if (line.isEmpty) continue;
 
-    final lapMatch = lapPattern.firstMatch(line);
-    if (lapMatch != null) {
-      final lapNumber = int.parse(lapMatch.group(1)!);
-      final remainingLine = line.substring(lapMatch.end);
-      final timeMatch = timePattern.firstMatch(remainingLine);
-      if (timeMatch == null) continue;
+    final timeMatch = timePattern.firstMatch(line);
+    final numberedLap =
+        timeMatch == null ? null : _numberedLapLine(line, timeMatch);
+    if (numberedLap != null) {
+      var lapNumber = numberedLap.lapNumber;
+      if (lastRecord != null &&
+          numberedLap.lapNumberText.length == 2 &&
+          numberedLap.lapNumberText.startsWith('0')) {
+        final nextLapNumber = _nextNumberedLapNumber(
+          lines,
+          lineIndex + 1,
+          timePattern,
+        );
+        final expectedLapNumber = lastRecord.lapNumber + 1;
+        if (expectedLapNumber >= 10 &&
+            numberedLap.lapNumberText == '0${expectedLapNumber % 10}' &&
+            nextLapNumber == expectedLapNumber + 1) {
+          lapNumber = expectedLapNumber;
+        }
+      }
       if (!seenLapNumbers.add(lapNumber)) continue;
-      final strokeText = remainingLine.substring(0, timeMatch.start).trim();
-      final seconds = _durationFromMatch(timeMatch);
+      final seconds = _durationFromMatch(numberedLap.timeMatch);
       final record = SwimRecord(
         lapNumber: lapNumber,
-        stroke: _normalizeStroke(strokeText),
+        stroke: _normalizeStroke(numberedLap.strokeText),
         timeSeconds: seconds,
         distanceMeters: poolLengthMeters,
       );
@@ -153,8 +185,15 @@ List<SwimRecord> parseSwimRecords(
       continue;
     }
 
-    final timeMatch = timePattern.firstMatch(line);
     if (timeMatch != null && lastRecord != null) {
+      if (_isRestLine(line, timeMatch.start)) {
+        lastRecord
+          ..restSeconds = _durationFromMatch(timeMatch)
+          ..restCount = 1;
+        restLineAttachments[lineIndex] = lastRecord;
+        continue;
+      }
+
       final strokeText = line.substring(0, timeMatch.start).trim();
       final stroke = _normalizeStroke(strokeText);
       if (stroke != '기타') {
@@ -163,7 +202,6 @@ List<SwimRecord> parseSwimRecords(
         final nextLapNumber = _nextNumberedLapNumber(
           lines,
           lineIndex + 1,
-          lapPattern,
           timePattern,
         );
         if ((nextLapNumber == null || nextLapNumber > lapNumber) &&
@@ -182,26 +220,160 @@ List<SwimRecord> parseSwimRecords(
         lastRecord
           ..restSeconds = _durationFromMatch(timeMatch)
           ..restCount = 1;
+        restLineAttachments[lineIndex] = lastRecord;
       }
     }
   }
+
+  _refineMissingLapRecords(
+    records,
+    lines,
+    seenLapNumbers,
+    restLineAttachments,
+    timePattern,
+    poolLengthMeters,
+  );
   return records;
+}
+
+class _NumberedLapLine {
+  const _NumberedLapLine({
+    required this.lapNumberText,
+    required this.strokeText,
+    required this.timeMatch,
+  });
+
+  final String lapNumberText;
+  final String strokeText;
+  final RegExpMatch timeMatch;
+
+  int get lapNumber => int.parse(lapNumberText);
+}
+
+_NumberedLapLine? _numberedLapLine(String line, RegExpMatch timeMatch) {
+  final prefix = line.substring(0, timeMatch.start);
+  final numberPattern = RegExp(r'(?:^|\s)(\d+)(?=\s)');
+  for (final match in numberPattern.allMatches(prefix)) {
+    final strokeText = prefix.substring(match.end).trim();
+    if (_normalizeStroke(strokeText) == '기타') continue;
+    return _NumberedLapLine(
+      lapNumberText: match.group(1)!,
+      strokeText: strokeText,
+      timeMatch: timeMatch,
+    );
+  }
+  return null;
+}
+
+bool _isRestLine(String line, int timeStart) {
+  final normalized = line.replaceAll(RegExp(r'\s+'), '').toLowerCase();
+  return normalized.contains('휴식') || normalized.contains('rest');
+}
+
+void _refineMissingLapRecords(
+  List<SwimRecord> records,
+  List<String> lines,
+  Set<int> seenLapNumbers,
+  Map<int, SwimRecord> restLineAttachments,
+  RegExp timePattern,
+  int poolLengthMeters,
+) {
+  if (records.length < 2) return;
+
+  final lapNumbers = records.map((record) => record.lapNumber).toSet();
+  final firstLap = lapNumbers.reduce((first, lap) => lap < first ? lap : first);
+  final lastLap = lapNumbers.reduce((last, lap) => lap > last ? lap : last);
+  final refinedLapNumbers = <int>{};
+
+  for (var expectedLap = firstLap + 1; expectedLap < lastLap; expectedLap++) {
+    if (lapNumbers.contains(expectedLap)) continue;
+
+    for (final line in lines) {
+      final timeMatch = timePattern.firstMatch(line);
+      if (timeMatch == null) continue;
+
+      final numberMatch = RegExp(r'(?:^|\s)(\d+)(?=\s)')
+          .firstMatch(line.substring(0, timeMatch.start));
+      if (numberMatch == null ||
+          int.parse(numberMatch.group(1)!) != expectedLap) {
+        continue;
+      }
+
+      final stroke = _normalizeStroke(line);
+      if (stroke == '기타' || !seenLapNumbers.add(expectedLap)) continue;
+
+      final recoveredRecord = SwimRecord(
+        lapNumber: expectedLap,
+        stroke: stroke,
+        timeSeconds: _durationFromMatch(timeMatch),
+        distanceMeters: poolLengthMeters,
+      );
+      final insertionIndex = records.indexWhere(
+        (record) => record.lapNumber > expectedLap,
+      );
+      if (insertionIndex == -1) {
+        records.add(recoveredRecord);
+      } else {
+        records.insert(insertionIndex, recoveredRecord);
+      }
+      lapNumbers.add(expectedLap);
+      refinedLapNumbers.add(expectedLap);
+      break;
+    }
+  }
+
+  if (refinedLapNumbers.isEmpty) return;
+  for (var lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    final restLine = lines[lineIndex];
+    final timeMatch = timePattern.firstMatch(restLine);
+    if (timeMatch == null || !_isRestLine(restLine, timeMatch.start)) {
+      continue;
+    }
+
+    for (var previousIndex = lineIndex - 1;
+        previousIndex >= 0;
+        previousIndex--) {
+      final previousLine = lines[previousIndex];
+      final previousTime = timePattern.firstMatch(previousLine);
+      if (previousTime == null) continue;
+
+      final numberMatch = RegExp(r'(?:^|\s)(\d+)(?=\s)')
+          .firstMatch(previousLine.substring(0, previousTime.start));
+      if (numberMatch == null) continue;
+      final lapNumber = int.parse(numberMatch.group(1)!);
+      if (!seenLapNumbers.contains(lapNumber)) continue;
+      if (refinedLapNumbers.contains(lapNumber)) {
+        final record = records.firstWhere(
+          (record) => record.lapNumber == lapNumber,
+        );
+        final previousAttachment = restLineAttachments[lineIndex];
+        final restSeconds = _durationFromMatch(timeMatch);
+        if (previousAttachment != null && previousAttachment != record) {
+          previousAttachment
+            ..restSeconds = 0
+            ..restCount = 0;
+        }
+        record
+          ..restSeconds = restSeconds
+          ..restCount = 1;
+        restLineAttachments[lineIndex] = record;
+      }
+      break;
+    }
+  }
 }
 
 int? _nextNumberedLapNumber(
   List<String> lines,
   int startIndex,
-  RegExp lapPattern,
   RegExp timePattern,
 ) {
   for (final line in lines.skip(startIndex)) {
     final trimmed = line.trim();
-    final lapMatch = lapPattern.firstMatch(trimmed);
-    if (lapMatch == null ||
-        !timePattern.hasMatch(trimmed.substring(lapMatch.end))) {
-      continue;
-    }
-    return int.parse(lapMatch.group(1)!);
+    final timeMatch = timePattern.firstMatch(trimmed);
+    if (timeMatch == null) continue;
+    final numberedLap = _numberedLapLine(trimmed, timeMatch);
+    if (numberedLap != null) return numberedLap.lapNumber;
   }
   return null;
 }
@@ -388,6 +560,25 @@ String formatDuration(double seconds) {
 
 String _normalizeStroke(String text) {
   final compact = text.replaceAll(RegExp(r'\s+'), '');
+  final lowerCase = compact.toLowerCase();
+  if (compact.contains('자유') || lowerCase.contains('freestyle')) {
+    return '자유';
+  }
+  if (compact.contains('접영') || lowerCase.contains('butterfly')) {
+    return '접영';
+  }
+  if (compact.contains('배영') || lowerCase.contains('backstroke')) {
+    return '배영';
+  }
+  if (compact.contains('평영') || lowerCase.contains('breaststroke')) {
+    return '평영';
+  }
+  if (compact.contains('킥판') || lowerCase.contains('kickboard')) {
+    return '킥판';
+  }
+  if (compact.contains('혼영') || lowerCase.contains('medley')) {
+    return '혼영';
+  }
   if (compact.startsWith('자')) return '자유';
   if (compact.startsWith('접')) return '접영';
   if (compact.startsWith('배') || compact.startsWith('H')) return '배영';

@@ -278,7 +278,7 @@ class _UploadPageState extends State<UploadPage> {
           ],
           if (analysis != null && !_isProcessing) ...[
             const SizedBox(height: 14),
-            _AnalysisSummary(analysis: analysis),
+            AnalysisSummary(analysis: analysis),
             const SizedBox(height: 14),
             FilledButton.icon(
               onPressed: _openResults,
@@ -571,13 +571,21 @@ class PhotoViewerPage extends StatelessWidget {
 }
 
 /// Summarizes the key counts and distance for the uploaded activity.
-class _AnalysisSummary extends StatelessWidget {
-  const _AnalysisSummary({required this.analysis});
+class AnalysisSummary extends StatefulWidget {
+  const AnalysisSummary({super.key, required this.analysis});
 
   final SwimAnalysis analysis;
 
   @override
+  State<AnalysisSummary> createState() => _AnalysisSummaryState();
+}
+
+class _AnalysisSummaryState extends State<AnalysisSummary> {
+  bool _showRecognizedText = false;
+
+  @override
   Widget build(BuildContext context) {
+    final analysis = widget.analysis;
     final scheme = Theme.of(context).colorScheme;
     final paceRecords =
         analysis.records.where((record) => !record.paceExcluded);
@@ -608,16 +616,71 @@ class _AnalysisSummary extends StatelessWidget {
                 Icon(Icons.check_circle,
                     color: scheme.tertiary, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  '분석 완료',
-                  style: TextStyle(
-                    color: scheme.onSurface,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                Expanded(
+                  child: Text(
+                    '분석 완료',
+                    style: TextStyle(
+                      color: scheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
             ),
+            if (analysis.estimatedMissingLapCount > 0) ...[
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.only(left: 28),
+                child: Text(
+                  'OCR읽기 실패 추정랩: '
+                  '${analysis.estimatedMissingLapCount}건\n'
+                  '누락번호: '
+                  '${analysis.estimatedMissingLapNumbers.join(', ')}',
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 2),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    _showRecognizedText = !_showRecognizedText;
+                  });
+                },
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: Text(_showRecognizedText ? '접기' : '원문 보기'),
+              ),
+            ),
+            if (_showRecognizedText) ...[
+              const SizedBox(height: 4),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 180),
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    analysis.recognizedLines.join('\n'),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
             _MetricRow(
               metrics: [
