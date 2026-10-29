@@ -1,4 +1,5 @@
 import argparse
+import statistics
 import unicodedata
 import warnings
 from dataclasses import dataclass, field
@@ -40,6 +41,12 @@ class SwimRecord:
         rest_count: 기록에 포함된 휴식 횟수
         lap_count: 이 기록이 포함하는 랩 수
         splits_seconds: IM 세션의 구간별 기록(초)
+        inferred: OCR 오인식으로 영법을 추정했는지 여부
+        pace_excluded: 이상치로 평균 페이스에서 제외되었는지 여부
+        pace_time_seconds: IM 페이스에 포함할 기록 시간(초)
+        pace_distance_m: IM 페이스에 포함할 거리(미터)
+        excluded_lap_numbers: 페이스에서 제외된 원본 랩 번호
+        transition_rest_seconds: IM 전환별 휴식 시간, 휴식이 없으면 None
     """
 
     lap_number: int
@@ -50,6 +57,14 @@ class SwimRecord:
     rest_count: int = 0
     lap_count: int = 1
     splits_seconds: tuple[float, ...] = field(default_factory=tuple)
+    inferred: bool = False
+    pace_excluded: bool = False
+    pace_time_seconds: float | None = None
+    pace_distance_m: int | None = None
+    excluded_lap_numbers: tuple[int, ...] = field(default_factory=tuple)
+    transition_rest_seconds: tuple[float | None, ...] = field(
+        default_factory=tuple
+    )
 
 
 @dataclass(frozen=True)
@@ -64,6 +79,9 @@ class StrokeSummary:
         pace_seconds_per_100m: 100m 기준 페이스(초)
         rest_count: 휴식 횟수
         total_rest_seconds: 총 휴식 시간(초)
+        pace_time_seconds: 이상치를 제외한 페이스 누적 시간(초)
+        pace_distance_m: 이상치를 제외한 페이스 누적 거리(미터)
+        excluded_lap_numbers: 페이스에서 제외된 원본 랩 번호
     """
 
     stroke: str
@@ -73,6 +91,9 @@ class StrokeSummary:
     pace_seconds_per_100m: float
     rest_count: int
     total_rest_seconds: float
+    pace_time_seconds: float
+    pace_distance_m: int
+    excluded_lap_numbers: tuple[int, ...]
 
 
 @dataclass
@@ -92,6 +113,9 @@ class _StrokeTotals:
     total_distance_m: int = 0
     rest_count: int = 0
     total_rest_seconds: float = 0.0
+    pace_time_seconds: float = 0.0
+    pace_distance_m: int = 0
+    excluded_lap_numbers: list[int] = field(default_factory=list)
 
 
 def extract_image(image_path: Path) -> list[str]:
@@ -277,21 +301,47 @@ def parse_swim_records(
     return swim_records
 
 
+def mark_pace_outliers(swim_records: list[SwimRecord]) -> None:
+    """절사 중위값의 1.7배를 초과한 랩을 페이스 계산에서 제외"""
+    paces = [
+        record.time_seconds * 100 / record.distance_m
+        if record.distance_m > 0
+        else 0.0
+        for record in swim_records
+    ]
+    valid_paces = sorted(pace for pace in paces if pace > 0)
+    trim_count = 3 if len(valid_paces) >= 20 else 2 if len(valid_paces) >= 12 else 0
+    trimmed_paces = (
+        valid_paces[trim_count:-trim_count]
+        if trim_count
+        else valid_paces
+    )
+    if not trimmed_paces:
+        return
+
+    pace_threshold = statistics.median(trimmed_paces) * 1.7
+    for record, pace in zip(swim_records, paces):
+        record.pace_excluded = pace > 0 and pace > pace_threshold
+
+
 def find_im_records(swim_records: list[SwimRecord]) -> list[SwimRecord]:
-    """연속된 접·배·평·자유 랩을 IM 기록으로 합산
+    """연속된 접·배·평·자 및 접영 오인식 자·배·평·자 랩을 IM으로 합산
 
     Args:
         swim_records: 파싱된 원본 랩 기록
 
     Returns:
-        네 영법을 합산하고 구간별 기록을 포함한 IM 기록
+        네 랩을 합산하고 구간별 기록을 포함한 IM 기록
     """
     im_records = []
     strokes = ("접영", "배영", "평영", "자유")
+    inferred_strokes = ("자유", "배영", "평영", "자유")
 
     for start in range(len(swim_records) - len(strokes) + 1):
         laps = swim_records[start:start + len(strokes)]
-        if tuple(lap.stroke for lap in laps) != strokes:
+        lap_strokes = tuple(lap.stroke for lap in laps)
+        inferred = lap_strokes == inferred_strokes
+        if lap_strokes != strokes and not inferred:
             continue
         if any(
             laps[index].lap_number + 1 != laps[index + 1].lap_number
@@ -315,6 +365,22 @@ def find_im_records(swim_records: list[SwimRecord]) -> list[SwimRecord]:
                 rest_count=sum(lap.rest_count for lap in laps[:-1]),
                 lap_count=len(laps),
                 splits_seconds=tuple(lap.time_seconds for lap in laps),
+                inferred=inferred,
+                pace_time_seconds=sum(
+                    lap.time_seconds for lap in laps if not lap.pace_excluded
+                ),
+                pace_distance_m=sum(
+                    lap.distance_m for lap in laps if not lap.pace_excluded
+                ),
+                excluded_lap_numbers=tuple(
+                    lap.lap_number for lap in laps if lap.pace_excluded
+                ),
+                transition_rest_seconds=tuple(
+                    lap.rest_seconds
+                    if lap.rest_count > 0 or lap.rest_seconds > 0
+                    else None
+                    for lap in laps[:-1]
+                ),
             )
         )
 
@@ -339,6 +405,11 @@ def summarize_by_stroke(
         summary.lap_count += record.lap_count
         summary.total_time_seconds += record.time_seconds
         summary.total_distance_m += record.distance_m
+        if record.pace_excluded:
+            summary.excluded_lap_numbers.append(record.lap_number)
+        else:
+            summary.pace_time_seconds += record.time_seconds
+            summary.pace_distance_m += record.distance_m
         if record.rest_count > 0 or record.rest_seconds > 0:
             summary.rest_count += record.rest_count or 1
             summary.total_rest_seconds += record.rest_seconds
@@ -354,12 +425,19 @@ def summarize_by_stroke(
                 total_time_seconds=total_time,
                 total_distance_m=total_distance,
                 pace_seconds_per_100m=(
-                    round(total_time * 100 / total_distance, 6)
-                    if total_distance
+                    round(
+                        summary.pace_time_seconds * 100
+                        / summary.pace_distance_m,
+                        6,
+                    )
+                    if summary.pace_distance_m
                     else 0.0
                 ),
                 rest_count=summary.rest_count,
                 total_rest_seconds=round(summary.total_rest_seconds, 6),
+                pace_time_seconds=round(summary.pace_time_seconds, 6),
+                pace_distance_m=summary.pace_distance_m,
+                excluded_lap_numbers=tuple(summary.excluded_lap_numbers),
             )
         )
 
@@ -376,6 +454,13 @@ def format_duration(seconds: float) -> str:
         초 단위 접미사(s)가 붙은 시간 문자열
     """
     return f"{seconds:.1f}s"
+
+
+def format_pace(time_seconds: float, distance_m: int) -> str:
+    """기록 시간과 거리를 페이스 문자열로 변환"""
+    if distance_m <= 0:
+        return "—"
+    return f"{format_duration(time_seconds * 100 / distance_m)}/100m"
 
 
 def format_swim_records(swim_records: list[SwimRecord]) -> str:
@@ -475,8 +560,17 @@ def print_im_evaluation(im_records: list[SwimRecord]) -> None:
     average_distance = (
         sum(record.distance_m for record in im_records) / len(im_records)
     )
-    average_pace = (
-        average_time * 100 / average_distance if average_distance else 0.0
+    pace_time = sum(
+        record.pace_time_seconds
+        if record.pace_time_seconds is not None
+        else record.time_seconds
+        for record in im_records
+    )
+    pace_distance = sum(
+        record.pace_distance_m
+        if record.pace_distance_m is not None
+        else record.distance_m
+        for record in im_records
     )
     average_rest_count = (
         sum(record.rest_count for record in im_records) / len(im_records)
@@ -495,22 +589,47 @@ def print_im_evaluation(im_records: list[SwimRecord]) -> None:
             max(len(record.splits_seconds) for record in im_records)
         )
     )
+    average_transition_rests = []
+    for index in range(3):
+        rests = []
+        for record in im_records:
+            if index >= len(record.transition_rest_seconds):
+                continue
+            rest = record.transition_rest_seconds[index]
+            if rest is not None:
+                rests.append(rest)
+        average_transition_rests.append(
+            sum(rests) / len(rests) if rests else None
+        )
     rows = [
         [
             f"{index}세션",
-            f"IM{record.distance_m}",
+            f"IM{record.distance_m}{'(접영 추정)' if record.inferred else ''}",
             (
                 f"{record.lap_number}-"
                 f"{record.lap_number + record.lap_count - 1}"
             ),
             format_duration(record.time_seconds),
-            (
-                f"{format_duration(record.time_seconds * 100 / record.distance_m)}"
-                "/100m"
+            format_pace(
+                record.pace_time_seconds
+                if record.pace_time_seconds is not None
+                else record.time_seconds,
+                record.pace_distance_m
+                if record.pace_distance_m is not None
+                else record.distance_m,
             ),
             " / ".join(
                 format_duration(split) for split in record.splits_seconds
             ),
+            " · ".join(
+                f"{label} {format_duration(rest)}"
+                for label, rest in zip(
+                    ("접·배", "배·평", "평·자"),
+                    record.transition_rest_seconds,
+                )
+                if rest is not None
+            )
+            or "—",
             str(record.rest_count),
             format_duration(record.rest_seconds),
         ]
@@ -522,10 +641,19 @@ def print_im_evaluation(im_records: list[SwimRecord]) -> None:
             f"{average_distance:.0f}m",
             f"{len(im_records)}세션",
             format_duration(average_time),
-            f"{format_duration(average_pace)}/100m",
+            format_pace(pace_time, pace_distance),
             " / ".join(
                 format_duration(split) for split in average_splits
             ),
+            " · ".join(
+                f"{label} {format_duration(rest)}"
+                for label, rest in zip(
+                    ("접·배", "배·평", "평·자"),
+                    average_transition_rests,
+                )
+                if rest is not None
+            )
+            or "—",
             f"{average_rest_count:.1f}",
             format_duration(average_rest_seconds),
         ]
@@ -539,6 +667,7 @@ def print_im_evaluation(im_records: list[SwimRecord]) -> None:
                 "기록",
                 "페이스(/100m)",
                 "구간 기록 (접/배/평/자)",
+                "구간 휴식",
                 "휴식 횟수",
                 "휴식 시간",
             ],
@@ -567,7 +696,8 @@ def print_stroke_evaluation(summaries: list[StrokeSummary]) -> None:
         6,
     )
     total_distance = sum(summary.total_distance_m for summary in summaries)
-    total_pace = total_time * 100 / total_distance if total_distance else 0.0
+    pace_time = sum(summary.pace_time_seconds for summary in summaries)
+    pace_distance = sum(summary.pace_distance_m for summary in summaries)
     total_rest_count = sum(summary.rest_count for summary in summaries)
     total_rest_seconds = round(
         sum(summary.total_rest_seconds for summary in summaries),
@@ -579,7 +709,10 @@ def print_stroke_evaluation(summaries: list[StrokeSummary]) -> None:
             str(summary.lap_count),
             f"{summary.total_distance_m}m",
             format_duration(summary.total_time_seconds),
-            f"{format_duration(summary.pace_seconds_per_100m)}/100m",
+            format_pace(
+                summary.pace_time_seconds,
+                summary.pace_distance_m,
+            ),
             str(summary.rest_count),
             format_duration(summary.total_rest_seconds),
         ]
@@ -591,7 +724,7 @@ def print_stroke_evaluation(summaries: list[StrokeSummary]) -> None:
             str(total_laps),
             f"{total_distance}m",
             format_duration(total_time),
-            f"{format_duration(total_pace)}/100m",
+            format_pace(pace_time, pace_distance),
             str(total_rest_count),
             format_duration(total_rest_seconds),
         ]
@@ -610,6 +743,19 @@ def print_stroke_evaluation(summaries: list[StrokeSummary]) -> None:
             rows,
         )
     )
+    excluded_lap_numbers = sorted(
+        {
+            lap_number
+            for summary in summaries
+            for lap_number in summary.excluded_lap_numbers
+        }
+    )
+    if excluded_lap_numbers:
+        laps = ", ".join(f"{lap_number}랩" for lap_number in excluded_lap_numbers)
+        print(
+            f"평균 페이스에서 {len(excluded_lap_numbers)}개 랩 "
+            f"({laps})을 제외했습니다. 원본 기록은 유지됩니다."
+        )
 
 
 def positive_pool_length(value: str) -> int:
@@ -652,6 +798,7 @@ def main() -> None:
 
     ocr_lines = extract_image(Path(args.image))
     swim_records = parse_swim_records(ocr_lines, args.pool_length)
+    mark_pace_outliers(swim_records)
     im_records = find_im_records(swim_records)
     stroke_summaries = summarize_by_stroke(swim_records)
 

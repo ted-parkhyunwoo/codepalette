@@ -32,6 +32,9 @@ class _UploadPageState extends State<UploadPage> {
   SwimAnalysis? _analysis;
   bool _isProcessing = false;
   String? _errorMessage;
+  bool _disableIm100Inference = false;
+  bool _includePaceOutlierLaps = false;
+  bool _finSwimmingIncluded = false;
 
   @override
   void initState() {
@@ -87,9 +90,10 @@ class _UploadPageState extends State<UploadPage> {
 
     try {
       final result = await _ocrService.analyze(image);
+      final configuredResult = _applyAnalysisOptions(result);
       if (!mounted) return;
       setState(() {
-        _analysis = result;
+        _analysis = configuredResult;
         _isProcessing = false;
       });
     } catch (error) {
@@ -104,6 +108,39 @@ class _UploadPageState extends State<UploadPage> {
       _isProcessing = false;
       _errorMessage = '이미지를 분석하지 못했습니다. 다시 시도해 주세요.\n$error';
     });
+  }
+
+  // These Android-only overrides intentionally do not change Python/C++ prototypes.
+  void _updateAnalysisOptions({
+    bool? disableIm100Inference,
+    bool? includePaceOutlierLaps,
+    bool? finSwimmingIncluded,
+  }) {
+    final analysis = _analysis;
+    setState(() {
+      if (disableIm100Inference != null) {
+        _disableIm100Inference = disableIm100Inference;
+      }
+      if (includePaceOutlierLaps != null) {
+        _includePaceOutlierLaps = includePaceOutlierLaps;
+      }
+      if (finSwimmingIncluded != null) {
+        _finSwimmingIncluded = finSwimmingIncluded;
+      }
+      if (analysis != null) {
+        _analysis = _applyAnalysisOptions(analysis);
+      }
+    });
+  }
+
+  SwimAnalysis _applyAnalysisOptions(SwimAnalysis analysis) {
+    return analyzeSwimText(
+      analysis.recognizedLines.join('\n'),
+      poolLengthMeters: analysis.poolLengthMeters,
+      inferIm100: !_disableIm100Inference,
+      excludePaceOutliers: !_includePaceOutlierLaps,
+      finSwimmingIncluded: _finSwimmingIncluded,
+    );
   }
 
   /// Opens the available result views for the current image analysis.
@@ -186,6 +223,18 @@ class _UploadPageState extends State<UploadPage> {
         children: [
           const _WelcomeCard(),
           const SizedBox(height: 18),
+          _AnalysisOptionsCard(
+            disableIm100Inference: _disableIm100Inference,
+            includePaceOutlierLaps: _includePaceOutlierLaps,
+            finSwimmingIncluded: _finSwimmingIncluded,
+            onDisableIm100InferenceChanged: (value) =>
+                _updateAnalysisOptions(disableIm100Inference: value),
+            onIncludePaceOutlierLapsChanged: (value) =>
+                _updateAnalysisOptions(includePaceOutlierLaps: value),
+            onFinSwimmingIncludedChanged: (value) =>
+                _updateAnalysisOptions(finSwimmingIncluded: value),
+          ),
+          const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: _isProcessing ? null : _selectImage,
             icon: const Icon(Icons.add_photo_alternate_outlined),
@@ -238,6 +287,77 @@ class _UploadPageState extends State<UploadPage> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Exposes Android-only analysis options on the main screen.
+class _AnalysisOptionsCard extends StatelessWidget {
+  const _AnalysisOptionsCard({
+    required this.disableIm100Inference,
+    required this.includePaceOutlierLaps,
+    required this.finSwimmingIncluded,
+    required this.onDisableIm100InferenceChanged,
+    required this.onIncludePaceOutlierLapsChanged,
+    required this.onFinSwimmingIncludedChanged,
+  });
+
+  final bool disableIm100Inference;
+  final bool includePaceOutlierLaps;
+  final bool finSwimmingIncluded;
+  final ValueChanged<bool> onDisableIm100InferenceChanged;
+  final ValueChanged<bool> onIncludePaceOutlierLapsChanged;
+  final ValueChanged<bool> onFinSwimmingIncludedChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Text(
+                '분석 옵션 · Android 전용',
+                style: TextStyle(
+                  color: _ink(context),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            CheckboxListTile(
+              value: disableIm100Inference,
+              onChanged: (value) =>
+                  onDisableIm100InferenceChanged(value ?? false),
+              title: const Text('IM100 추론 사용 안 함'),
+              subtitle: const Text('자·배·평·자를 접영 추정 IM으로 처리하지 않습니다.'),
+              controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
+            ),
+            CheckboxListTile(
+              value: includePaceOutlierLaps,
+              onChanged: (value) =>
+                  onIncludePaceOutlierLapsChanged(value ?? false),
+              title: const Text('오계측 의심 랩을 페이스에서 제외하지 않음'),
+              subtitle: const Text('긴 랩 기록도 평균 페이스 계산에 포함합니다.'),
+              controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
+            ),
+            CheckboxListTile(
+              value: finSwimmingIncluded,
+              onChanged: (value) =>
+                  onFinSwimmingIncludedChanged(value ?? false),
+              title: const Text('핀수영 포함'),
+              subtitle: const Text('페이스 이상치 제외 기준을 1.7배에서 2.5배로 완화합니다.'),
+              controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
+            ),
+          ],
+        ),
       ),
     );
   }

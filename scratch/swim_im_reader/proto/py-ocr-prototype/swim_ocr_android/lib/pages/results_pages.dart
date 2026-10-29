@@ -56,7 +56,8 @@ class ImEvaluationPage extends StatelessWidget {
     final distance = analysis.poolLengthMeters * 4;
     return _ResultScaffold(
       title: 'IM $distance 찾기',
-      summary: '${sessions.length}개 · 접영–배영–평영–자유형 순서',
+      summary: '${sessions.length}개 · 접영–배영–평영–자유형 순서'
+          ' (자·배·평·자는 접영 오인식으로 추정)',
       child: sessions.isEmpty
           ? _EmptyResult(message: '연속된 IM $distance 기록이 없습니다.')
           : Column(
@@ -83,14 +84,17 @@ class ImEvaluationPage extends StatelessWidget {
                   rows: sessions.indexed
                       .map(
                         (entry) => [
-                          '${entry.$1 + 1}회',
+                          '${entry.$1 + 1}회'
+                              '${entry.$2.inferred ? ' · 접영 추정' : ''}',
                           '${entry.$2.lapNumber}–${entry.$2.lapNumber + entry.$2.lapCount - 1}',
                           formatDuration(entry.$2.timeSeconds),
-                          formatDuration(
-                            entry.$2.timeSeconds *
-                                100 /
-                                entry.$2.distanceMeters,
-                          ),
+                          entry.$2.paceDistanceMeters == 0
+                              ? '—'
+                              : formatDuration(
+                                  entry.$2.paceTimeSeconds! *
+                                      100 /
+                                      entry.$2.paceDistanceMeters!,
+                                ),
                           entry.$2.splitsSeconds
                               .map(formatDuration)
                               .join(' / '),
@@ -114,6 +118,11 @@ class StrokeEvaluationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final summaries = analysis.strokeSummaries;
+    final excludedLaps = analysis.records
+        .where((record) => record.paceExcluded)
+        .map((record) => record.lapNumber)
+        .toList()
+      ..sort();
     return _ResultScaffold(
       title: '영법별 평가',
       summary: '영법별 거리와 100m 페이스',
@@ -147,7 +156,9 @@ class StrokeEvaluationPage extends StatelessWidget {
                         '${summary.lapCount}',
                         '${summary.totalDistanceMeters}m',
                         formatDuration(summary.totalTimeSeconds),
-                        formatDuration(summary.paceSecondsPer100m),
+                        summary.paceDistanceMeters == 0
+                            ? '—'
+                            : formatDuration(summary.paceSecondsPer100m),
                         '${summary.restCount}회',
                         formatDuration(summary.totalRestSeconds),
                       ],
@@ -155,6 +166,22 @@ class StrokeEvaluationPage extends StatelessWidget {
                     _totalRow(summaries),
                   ],
                 ),
+                if (excludedLaps.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '평균 페이스에서 ${excludedLaps.length}개 랩 '
+                      '(${excludedLaps.map((lap) => '$lap랩').join(', ')})을 '
+                      '제외했습니다. 전체 기록에는 원본을 유지합니다.',
+                      style: TextStyle(
+                        color: _muted(context),
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
     );
@@ -176,12 +203,22 @@ class StrokeEvaluationPage extends StatelessWidget {
       0,
       (total, item) => total + item.totalRestSeconds,
     );
+    final paceTime = summaries.fold<double>(
+      0,
+      (total, item) => total + item.paceTimeSeconds,
+    );
+    final paceDistance = summaries.fold<int>(
+      0,
+      (total, item) => total + item.paceDistanceMeters,
+    );
     return [
       '전체',
       '$laps',
       '${distance}m',
       formatDuration(time),
-      formatDuration(distance == 0 ? 0 : time * 100 / distance),
+      paceDistance == 0
+          ? '—'
+          : formatDuration(paceTime * 100 / paceDistance),
       '$rests회',
       formatDuration(restTime),
     ];
@@ -322,16 +359,22 @@ class _ResultTableState extends State<_ResultTable> {
                     _TableRow(
                       values: widget.headers,
                       columnWidths: columnWidths,
-                      background: scheme.surfaceContainerHighest,
+                      background: scheme.primaryContainer,
+                      foreground: scheme.onPrimaryContainer,
                       isHeader: true,
                     ),
                     for (var index = 0; index < widget.rows.length; index++)
                       _TableRow(
                         values: widget.rows[index],
                         columnWidths: columnWidths,
-                        background: index.isEven
-                            ? scheme.surface
-                            : scheme.surfaceContainerLow,
+                        background: widget.rows[index].first == '전체'
+                            ? scheme.tertiaryContainer
+                            : index.isEven
+                                ? scheme.surface
+                                : scheme.surfaceContainerLow,
+                        foreground: widget.rows[index].first == '전체'
+                            ? scheme.onTertiaryContainer
+                            : _ink(context),
                         isEmphasized: widget.rows[index].first == '전체',
                       ),
                   ],
@@ -351,6 +394,7 @@ class _TableRow extends StatelessWidget {
     required this.values,
     required this.columnWidths,
     required this.background,
+    required this.foreground,
     this.isHeader = false,
     this.isEmphasized = false,
   });
@@ -358,6 +402,7 @@ class _TableRow extends StatelessWidget {
   final List<String> values;
   final List<double> columnWidths;
   final Color background;
+  final Color foreground;
   final bool isHeader;
   final bool isEmphasized;
 
@@ -378,7 +423,7 @@ class _TableRow extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: _ink(context),
+                  color: foreground,
                   fontSize: isHeader ? 11 : 12,
                   fontWeight: isHeader || isEmphasized
                       ? FontWeight.w700

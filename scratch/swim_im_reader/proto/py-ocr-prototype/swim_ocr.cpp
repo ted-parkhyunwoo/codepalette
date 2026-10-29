@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -8,6 +9,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <opencv2/imgcodecs.hpp>
@@ -31,6 +33,12 @@ struct SwimRecord {
     int rest_count = 0;
     int lap_count = 1;
     std::vector<double> splits_seconds;
+    bool inferred = false;
+    bool pace_excluded = false;
+    double pace_time_seconds = -1.0;
+    int pace_distance_m = -1;
+    std::vector<int> excluded_lap_numbers;
+    std::vector<std::optional<double>> transition_rest_seconds;
 };
 
 struct StrokeSummary {
@@ -41,6 +49,9 @@ struct StrokeSummary {
     double pace_seconds_per_100m = 0.0;
     int rest_count = 0;
     double total_rest_seconds = 0.0;
+    double pace_time_seconds = 0.0;
+    int pace_distance_m = 0;
+    std::vector<int> excluded_lap_numbers;
 };
 
 struct TimeValue {
@@ -269,30 +280,90 @@ std::vector<SwimRecord> parse_swim_records(
     return records;
 }
 
-// 연속된 접·배·평·자유 랩을 IM 기록으로 합산합니다.
+// 극단값을 절사한 페이스 중위값의 1.7배를 초과하는 랩을 제외합니다.
+void mark_pace_outliers(std::vector<SwimRecord>& records) {
+    std::vector<double> paces;
+    paces.reserve(records.size());
+    for (const SwimRecord& record : records) {
+        paces.push_back(record.distance_m > 0
+            ? record.time_seconds * 100.0 / record.distance_m
+            : 0.0);
+    }
+
+    std::vector<double> valid_paces;
+    for (double pace : paces) {
+        if (pace > 0.0) {
+            valid_paces.push_back(pace);
+        }
+    }
+    std::sort(valid_paces.begin(), valid_paces.end());
+    const std::size_t trim_count = valid_paces.size() >= 20
+        ? 3
+        : valid_paces.size() >= 12 ? 2 : 0;
+    if (trim_count > 0) {
+        valid_paces.erase(
+            valid_paces.begin(),
+            valid_paces.begin() + static_cast<std::ptrdiff_t>(trim_count)
+        );
+        valid_paces.resize(valid_paces.size() - trim_count);
+    }
+    if (valid_paces.empty()) {
+        return;
+    }
+
+    const std::size_t middle = valid_paces.size() / 2;
+    const double median = valid_paces.size() % 2 == 0
+        ? (valid_paces[middle - 1] + valid_paces[middle]) / 2.0
+        : valid_paces[middle];
+    const double threshold = median * 1.7;
+    for (std::size_t index = 0; index < records.size(); ++index) {
+        records[index].pace_excluded =
+            paces[index] > 0.0 && paces[index] > threshold;
+    }
+}
+
+double pace_time(const SwimRecord& record) {
+    if (record.pace_time_seconds >= 0.0) {
+        return record.pace_time_seconds;
+    }
+    return record.pace_excluded ? 0.0 : record.time_seconds;
+}
+
+int pace_distance(const SwimRecord& record) {
+    if (record.pace_distance_m >= 0) {
+        return record.pace_distance_m;
+    }
+    return record.pace_excluded ? 0 : record.distance_m;
+}
+
+// 접·배·평·자 또는 접영 오인식 자·배·평·자 랩을 IM 기록으로 합산합니다.
 std::vector<SwimRecord> find_im_records(
     const std::vector<SwimRecord>& records
 ) {
     const std::vector<std::string> strokes = {"접영", "배영", "평영", "자유"};
+    const std::vector<std::string> inferred_strokes = {
+        "자유", "배영", "평영", "자유"
+    };
     std::vector<SwimRecord> im_records;
 
     for (std::size_t start = 0; start + strokes.size() <= records.size(); ++start) {
-        bool matches = true;
+        bool matches_expected = true;
+        bool matches_inferred = true;
+        bool consecutive = true;
         for (std::size_t offset = 0; offset < strokes.size(); ++offset) {
-            if (records[start + offset].stroke != strokes[offset]) {
-                matches = false;
-                break;
-            }
+            matches_expected = matches_expected &&
+                records[start + offset].stroke == strokes[offset];
+            matches_inferred = matches_inferred &&
+                records[start + offset].stroke == inferred_strokes[offset];
             if (
                 offset > 0 &&
                 records[start + offset - 1].lap_number + 1 !=
                     records[start + offset].lap_number
             ) {
-                matches = false;
-                break;
+                consecutive = false;
             }
         }
-        if (!matches) {
+        if (!(matches_expected || matches_inferred) || !consecutive) {
             continue;
         }
 
@@ -306,16 +377,30 @@ std::vector<SwimRecord> find_im_records(
             static_cast<int>(strokes.size()),
             {},
         };
+        im_record.pace_time_seconds = 0.0;
+        im_record.pace_distance_m = 0;
         for (std::size_t offset = 0; offset < strokes.size(); ++offset) {
             const SwimRecord& lap = records[start + offset];
             im_record.time_seconds += lap.time_seconds;
             im_record.distance_m += lap.distance_m;
             im_record.splits_seconds.push_back(lap.time_seconds);
+            if (!lap.pace_excluded) {
+                im_record.pace_time_seconds += lap.time_seconds;
+                im_record.pace_distance_m += lap.distance_m;
+            } else {
+                im_record.excluded_lap_numbers.push_back(lap.lap_number);
+            }
             if (offset + 1 < strokes.size()) {
                 im_record.rest_seconds += lap.rest_seconds;
                 im_record.rest_count += lap.rest_count;
+                im_record.transition_rest_seconds.push_back(
+                    lap.rest_count > 0 || lap.rest_seconds > 0.0
+                        ? std::optional<double>(lap.rest_seconds)
+                        : std::nullopt
+                );
             }
         }
+        im_record.inferred = matches_inferred;
         im_records.push_back(im_record);
     }
     return im_records;
@@ -340,6 +425,12 @@ std::vector<StrokeSummary> summarize_by_stroke(
         summary.lap_count += record.lap_count;
         summary.total_time_seconds += record.time_seconds;
         summary.total_distance_m += record.distance_m;
+        if (record.pace_excluded) {
+            summary.excluded_lap_numbers.push_back(record.lap_number);
+        } else {
+            summary.pace_time_seconds += record.time_seconds;
+            summary.pace_distance_m += record.distance_m;
+        }
         if (record.rest_count > 0 || record.rest_seconds > 0.0) {
             summary.rest_count += record.rest_count > 0 ? record.rest_count : 1;
             summary.total_rest_seconds += record.rest_seconds;
@@ -347,9 +438,9 @@ std::vector<StrokeSummary> summarize_by_stroke(
     }
 
     for (StrokeSummary& summary : summaries) {
-        if (summary.total_distance_m > 0) {
+        if (summary.pace_distance_m > 0) {
             summary.pace_seconds_per_100m =
-                summary.total_time_seconds * 100.0 / summary.total_distance_m;
+                summary.pace_time_seconds * 100.0 / summary.pace_distance_m;
         }
     }
     return summaries;
@@ -360,6 +451,13 @@ std::string format_duration(double seconds) {
     std::ostringstream output;
     output << std::fixed << std::setprecision(1) << seconds << 's';
     return output.str();
+}
+
+std::string format_pace(double time_seconds, int distance_m) {
+    if (distance_m <= 0) {
+        return "—";
+    }
+    return format_duration(time_seconds * 100.0 / distance_m) + "/100m";
 }
 
 // 한글과 영문 혼합 문자열의 터미널 표시 너비를 계산합니다.
@@ -446,12 +544,16 @@ void print_im_evaluation(const std::vector<SwimRecord>& records) {
     double average_distance = 0.0;
     double average_rest_count = 0.0;
     double average_rest_seconds = 0.0;
+    double pace_time_total = 0.0;
+    int pace_distance_total = 0;
     std::size_t split_count = 0;
     for (const SwimRecord& record : records) {
         average_time += record.time_seconds;
         average_distance += record.distance_m;
         average_rest_count += record.rest_count;
         average_rest_seconds += record.rest_seconds;
+        pace_time_total += pace_time(record);
+        pace_distance_total += pace_distance(record);
         split_count = std::max(split_count, record.splits_seconds.size());
     }
     const double session_count = static_cast<double>(records.size());
@@ -459,16 +561,14 @@ void print_im_evaluation(const std::vector<SwimRecord>& records) {
     average_distance /= session_count;
     average_rest_count /= session_count;
     average_rest_seconds /= session_count;
-    const double average_pace = average_distance > 0.0
-        ? average_time * 100.0 / average_distance
-        : 0.0;
 
     std::vector<std::vector<std::string>> rows;
+    const std::vector<std::string> transition_labels = {
+        "접·배", "배·평", "평·자"
+    };
     for (std::size_t index = 0; index < records.size(); ++index) {
         const SwimRecord& record = records[index];
-        const double pace = record.distance_m > 0
-            ? record.time_seconds * 100.0 / record.distance_m
-            : 0.0;
+        const int included_distance = pace_distance(record);
         std::ostringstream lap_range;
         lap_range << record.lap_number << '-'
                   << record.lap_number + record.lap_count - 1;
@@ -481,13 +581,35 @@ void print_im_evaluation(const std::vector<SwimRecord>& records) {
             split_text << format_duration(record.splits_seconds[split]);
         }
 
+        std::ostringstream transition_rest_text;
+        for (
+            std::size_t transition = 0;
+            transition < record.transition_rest_seconds.size();
+            ++transition
+        ) {
+            if (!record.transition_rest_seconds[transition]) {
+                continue;
+            }
+            if (transition_rest_text.tellp() > 0) {
+                transition_rest_text << " · ";
+            }
+            transition_rest_text << transition_labels[transition] << ' '
+                                 << format_duration(
+                                        *record.transition_rest_seconds[transition]
+                                    );
+        }
+
         rows.push_back({
             std::to_string(index + 1) + "세션",
-            "IM" + std::to_string(record.distance_m),
+            "IM" + std::to_string(record.distance_m) +
+                (record.inferred ? "(접영 추정)" : ""),
             lap_range.str(),
             format_duration(record.time_seconds),
-            format_duration(pace) + "/100m",
+            format_pace(pace_time(record), included_distance),
             split_text.str(),
+            transition_rest_text.tellp() > 0
+                ? transition_rest_text.str()
+                : "—",
             std::to_string(record.rest_count),
             format_duration(record.rest_seconds),
         });
@@ -495,10 +617,23 @@ void print_im_evaluation(const std::vector<SwimRecord>& records) {
 
     std::vector<double> average_splits(split_count, 0.0);
     std::vector<std::size_t> split_sessions(split_count, 0);
+    std::vector<double> average_transition_rests(3, 0.0);
+    std::vector<std::size_t> transition_sessions(3, 0);
     for (const SwimRecord& record : records) {
         for (std::size_t split = 0; split < record.splits_seconds.size(); ++split) {
             average_splits[split] += record.splits_seconds[split];
             ++split_sessions[split];
+        }
+        for (
+            std::size_t transition = 0;
+            transition < record.transition_rest_seconds.size();
+            ++transition
+        ) {
+            if (record.transition_rest_seconds[transition]) {
+                average_transition_rests[transition] +=
+                    *record.transition_rest_seconds[transition];
+                ++transition_sessions[transition];
+            }
         }
     }
     std::ostringstream average_split_text;
@@ -510,6 +645,20 @@ void print_im_evaluation(const std::vector<SwimRecord>& records) {
             average_splits[split] / static_cast<double>(split_sessions[split])
         );
     }
+    std::ostringstream average_transition_rest_text;
+    for (std::size_t transition = 0; transition < transition_labels.size(); ++transition) {
+        if (transition_sessions[transition] == 0) {
+            continue;
+        }
+        if (average_transition_rest_text.tellp() > 0) {
+            average_transition_rest_text << " · ";
+        }
+        average_transition_rest_text << transition_labels[transition] << ' '
+            << format_duration(
+                average_transition_rests[transition] /
+                static_cast<double>(transition_sessions[transition])
+            );
+    }
     std::ostringstream average_distance_text;
     average_distance_text << std::fixed << std::setprecision(0)
                           << average_distance << "m";
@@ -519,8 +668,11 @@ void print_im_evaluation(const std::vector<SwimRecord>& records) {
         average_distance_text.str(),
         std::to_string(records.size()) + "세션",
         format_duration(average_time),
-        format_duration(average_pace) + "/100m",
+        format_pace(pace_time_total, pace_distance_total),
         average_split_text.str(),
+        average_transition_rest_text.tellp() > 0
+            ? average_transition_rest_text.str()
+            : "—",
         [&average_rest_count]() {
             std::ostringstream output;
             output << std::fixed << std::setprecision(1) << average_rest_count;
@@ -537,6 +689,7 @@ void print_im_evaluation(const std::vector<SwimRecord>& records) {
             "기록",
             "페이스(/100m)",
             "구간 기록 (접/배/평/자)",
+            "구간 휴식",
             "휴식 횟수",
             "휴식 시간",
         },
@@ -557,6 +710,9 @@ void print_stroke_evaluation(const std::vector<StrokeSummary>& summaries) {
     int total_rest_count = 0;
     double total_time = 0.0;
     double total_rest_seconds = 0.0;
+    double total_pace_time = 0.0;
+    int total_pace_distance = 0;
+    std::vector<int> excluded_lap_numbers;
     std::vector<std::vector<std::string>> rows;
     for (const StrokeSummary& summary : summaries) {
         total_laps += summary.lap_count;
@@ -564,26 +720,33 @@ void print_stroke_evaluation(const std::vector<StrokeSummary>& summaries) {
         total_rest_count += summary.rest_count;
         total_time += summary.total_time_seconds;
         total_rest_seconds += summary.total_rest_seconds;
+        total_pace_time += summary.pace_time_seconds;
+        total_pace_distance += summary.pace_distance_m;
+        excluded_lap_numbers.insert(
+            excluded_lap_numbers.end(),
+            summary.excluded_lap_numbers.begin(),
+            summary.excluded_lap_numbers.end()
+        );
         rows.push_back({
             summary.stroke,
             std::to_string(summary.lap_count),
             std::to_string(summary.total_distance_m) + "m",
             format_duration(summary.total_time_seconds),
-            format_duration(summary.pace_seconds_per_100m) + "/100m",
+            format_pace(
+                summary.pace_time_seconds,
+                summary.pace_distance_m
+            ),
             std::to_string(summary.rest_count),
             format_duration(summary.total_rest_seconds),
         });
     }
 
-    const double total_pace = total_distance > 0
-        ? total_time * 100.0 / total_distance
-        : 0.0;
     rows.push_back({
         "전체",
         std::to_string(total_laps),
         std::to_string(total_distance) + "m",
         format_duration(total_time),
-        format_duration(total_pace) + "/100m",
+        format_pace(total_pace_time, total_pace_distance),
         std::to_string(total_rest_count),
         format_duration(total_rest_seconds),
     });
@@ -600,6 +763,22 @@ void print_stroke_evaluation(const std::vector<StrokeSummary>& summaries) {
         },
         rows
     ) << '\n';
+    std::sort(excluded_lap_numbers.begin(), excluded_lap_numbers.end());
+    excluded_lap_numbers.erase(
+        std::unique(excluded_lap_numbers.begin(), excluded_lap_numbers.end()),
+        excluded_lap_numbers.end()
+    );
+    if (!excluded_lap_numbers.empty()) {
+        std::cout << "평균 페이스에서 " << excluded_lap_numbers.size()
+                  << "개 랩 (";
+        for (std::size_t index = 0; index < excluded_lap_numbers.size(); ++index) {
+            if (index > 0) {
+                std::cout << ", ";
+            }
+            std::cout << excluded_lap_numbers[index] << "랩";
+        }
+        std::cout << ")을 제외했습니다. 원본 기록은 유지됩니다.\n";
+    }
 }
 
 // CLI 수영장 길이를 양의 정수로 변환하고 검증합니다.
@@ -630,8 +809,9 @@ int main(int argc, char* argv[]) {
             ? positive_pool_length(argv[2])
             : 25;
         const std::vector<std::string> ocr_lines = extract_lines(argv[1]);
-        const std::vector<SwimRecord> swim_records =
+        std::vector<SwimRecord> swim_records =
             parse_swim_records(ocr_lines, pool_length_m);
+        mark_pace_outliers(swim_records);
         const std::vector<SwimRecord> im_records = find_im_records(swim_records);
         const std::vector<StrokeSummary> stroke_summaries =
             summarize_by_stroke(swim_records);

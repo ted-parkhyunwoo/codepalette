@@ -9,6 +9,12 @@ class SwimRecord {
     this.restCount = 0,
     this.lapCount = 1,
     this.splitsSeconds = const [],
+    this.inferred = false,
+    this.paceExcluded = false,
+    this.paceTimeSeconds,
+    this.paceDistanceMeters,
+    this.excludedLapNumbers = const [],
+    this.transitionRestSeconds = const [],
   });
 
   final int lapNumber;
@@ -19,6 +25,12 @@ class SwimRecord {
   int restCount;
   final int lapCount;
   final List<double> splitsSeconds;
+  final bool inferred;
+  bool paceExcluded;
+  final double? paceTimeSeconds;
+  final int? paceDistanceMeters;
+  final List<int> excludedLapNumbers;
+  final List<double?> transitionRestSeconds;
 }
 
 /// Aggregated time, distance, pace, and rest metrics for one stroke.
@@ -31,6 +43,9 @@ class StrokeSummary {
     required this.paceSecondsPer100m,
     required this.restCount,
     required this.totalRestSeconds,
+    required this.paceTimeSeconds,
+    required this.paceDistanceMeters,
+    required this.excludedLapNumbers,
   });
 
   final String stroke;
@@ -40,6 +55,9 @@ class StrokeSummary {
   final double paceSecondsPer100m;
   final int restCount;
   final double totalRestSeconds;
+  final double paceTimeSeconds;
+  final int paceDistanceMeters;
+  final List<int> excludedLapNumbers;
 }
 
 /// All transient records and summary metrics derived from one uploaded image.
@@ -64,16 +82,28 @@ class SwimAnalysis {
 /// Parses OCR text, detects pool length, and computes activity summaries.
 ///
 /// The returned analysis is held in memory only; it is not persisted.
-SwimAnalysis analyzeSwimText(String text, {int? poolLengthMeters}) {
+// Android-only analysis controls; keep Python and C++ prototype behavior unchanged.
+SwimAnalysis analyzeSwimText(
+  String text, {
+  int? poolLengthMeters,
+  bool inferIm100 = true,
+  bool excludePaceOutliers = true,
+  bool finSwimmingIncluded = false,
+}) {
   final lines = text.split(RegExp(r'\r?\n'));
   final resolvedPoolLength = poolLengthMeters ?? _detectPoolLength(lines);
   final records = parseSwimRecords(
     lines,
     poolLengthMeters: resolvedPoolLength,
   );
+  markPaceOutliers(
+    records,
+    excludeOutliers: excludePaceOutliers,
+    finSwimmingIncluded: finSwimmingIncluded,
+  );
   return SwimAnalysis(
     records: records,
-    imRecords: findImRecords(records),
+    imRecords: findImRecords(records, inferIm100: inferIm100),
     strokeSummaries: summarizeByStroke(records),
     recognizedLines: text
         .split(RegExp(r'\r?\n'))
@@ -99,8 +129,8 @@ List<SwimRecord> parseSwimRecords(
   final timePattern = RegExp(r'(\d+):(\d{2}(?:\.\d+)?)');
   final lapPattern = RegExp(r'^\s*(\d+)');
 
-  for (final rawLine in lines) {
-    final line = rawLine.trim();
+  for (var lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    final line = lines[lineIndex].trim();
     if (line.isEmpty) continue;
 
     final lapMatch = lapPattern.firstMatch(line);
@@ -123,14 +153,98 @@ List<SwimRecord> parseSwimRecords(
       continue;
     }
 
-    final restMatch = timePattern.firstMatch(line);
-    if (restMatch != null && lastRecord != null) {
-      lastRecord
-        ..restSeconds = _durationFromMatch(restMatch)
-        ..restCount = 1;
+    final timeMatch = timePattern.firstMatch(line);
+    if (timeMatch != null && lastRecord != null) {
+      final strokeText = line.substring(0, timeMatch.start).trim();
+      final stroke = _normalizeStroke(strokeText);
+      if (stroke != '기타') {
+        // Android ML Kit may omit a lap number while still recognizing its stroke and time.
+        final lapNumber = lastRecord.lapNumber + 1;
+        final nextLapNumber = _nextNumberedLapNumber(
+          lines,
+          lineIndex + 1,
+          lapPattern,
+          timePattern,
+        );
+        if ((nextLapNumber == null || nextLapNumber > lapNumber) &&
+            seenLapNumbers.add(lapNumber)) {
+          final record = SwimRecord(
+            lapNumber: lapNumber,
+            stroke: stroke,
+            timeSeconds: _durationFromMatch(timeMatch),
+            distanceMeters: poolLengthMeters,
+          );
+          records.add(record);
+          lastRecord = record;
+        }
+        continue;
+      } else {
+        lastRecord
+          ..restSeconds = _durationFromMatch(timeMatch)
+          ..restCount = 1;
+      }
     }
   }
   return records;
+}
+
+int? _nextNumberedLapNumber(
+  List<String> lines,
+  int startIndex,
+  RegExp lapPattern,
+  RegExp timePattern,
+) {
+  for (final line in lines.skip(startIndex)) {
+    final trimmed = line.trim();
+    final lapMatch = lapPattern.firstMatch(trimmed);
+    if (lapMatch == null ||
+        !timePattern.hasMatch(trimmed.substring(lapMatch.end))) {
+      continue;
+    }
+    return int.parse(lapMatch.group(1)!);
+  }
+  return null;
+}
+
+/// Excludes laps over the configured multiple of a trimmed median 100m pace.
+void markPaceOutliers(
+  List<SwimRecord> records, {
+  bool excludeOutliers = true,
+  bool finSwimmingIncluded = false,
+}) {
+  if (!excludeOutliers) {
+    for (final record in records) {
+      record.paceExcluded = false;
+    }
+    return;
+  }
+
+  final paces = records
+      .map(
+        (record) => record.distanceMeters > 0
+            ? record.timeSeconds * 100 / record.distanceMeters
+            : 0.0,
+      )
+      .toList();
+  final validPaces = paces.where((pace) => pace > 0).toList()..sort();
+  final trimCount = validPaces.length >= 20
+      ? 3
+      : validPaces.length >= 12
+          ? 2
+          : 0;
+  final trimmedPaces = trimCount == 0
+      ? validPaces
+      : validPaces.sublist(trimCount, validPaces.length - trimCount);
+  if (trimmedPaces.isEmpty) return;
+
+  final middle = trimmedPaces.length ~/ 2;
+  final median = trimmedPaces.length.isOdd
+      ? trimmedPaces[middle]
+      : (trimmedPaces[middle - 1] + trimmedPaces[middle]) / 2;
+  final threshold = median * (finSwimmingIncluded ? 2.5 : 1.7);
+  for (var index = 0; index < records.length; index++) {
+    records[index].paceExcluded = paces[index] > 0 && paces[index] > threshold;
+  }
 }
 
 /// Reads the pool length from a Samsung Health `구간(25m/50m)` heading.
@@ -144,8 +258,12 @@ int _detectPoolLength(List<String> lines) {
 }
 
 /// Finds consecutive butterfly, backstroke, breaststroke, and freestyle sets.
-List<SwimRecord> findImRecords(List<SwimRecord> records) {
+List<SwimRecord> findImRecords(
+  List<SwimRecord> records, {
+  bool inferIm100 = true,
+}) {
   const expectedStrokes = ['접영', '배영', '평영', '자유'];
+  const inferredStrokes = ['자유', '배영', '평영', '자유'];
   final result = <SwimRecord>[];
 
   for (var start = 0;
@@ -156,12 +274,19 @@ List<SwimRecord> findImRecords(List<SwimRecord> records) {
       expectedStrokes.length,
       (index) => laps[index].stroke == expectedStrokes[index],
     ).every((matches) => matches);
+    final hasInferredStrokes = List.generate(
+      inferredStrokes.length,
+      (index) => laps[index].stroke == inferredStrokes[index],
+    ).every((matches) => matches);
     final hasConsecutiveLapNumbers = List.generate(
       laps.length - 1,
       (index) => laps[index].lapNumber + 1 == laps[index + 1].lapNumber,
     ).every((matches) => matches);
 
-    if (!hasExpectedStrokes || !hasConsecutiveLapNumbers) continue;
+    if ((!hasExpectedStrokes && (!inferIm100 || !hasInferredStrokes)) ||
+        !hasConsecutiveLapNumbers) {
+      continue;
+    }
     result.add(
       SwimRecord(
         lapNumber: laps.first.lapNumber,
@@ -179,6 +304,23 @@ List<SwimRecord> findImRecords(List<SwimRecord> records) {
             .fold(0, (total, lap) => total + lap.restCount),
         lapCount: laps.length,
         splitsSeconds: laps.map((lap) => lap.timeSeconds).toList(),
+        inferred: hasInferredStrokes,
+        paceTimeSeconds: laps
+            .where((lap) => !lap.paceExcluded)
+            .fold<double>(0, (total, lap) => total + lap.timeSeconds),
+        paceDistanceMeters: laps
+            .where((lap) => !lap.paceExcluded)
+            .fold<int>(0, (total, lap) => total + lap.distanceMeters),
+        excludedLapNumbers: laps
+            .where((lap) => lap.paceExcluded)
+            .map((lap) => lap.lapNumber)
+            .toList(),
+        transitionRestSeconds: List.generate(laps.length - 1, (index) {
+          final lap = laps[index];
+          return lap.restCount > 0 || lap.restSeconds > 0
+              ? lap.restSeconds
+              : null;
+        }),
       ),
     );
   }
@@ -209,14 +351,29 @@ List<StrokeSummary> summarizeByStroke(List<SwimRecord> records) {
       0,
       (total, lap) => total + lap.restSeconds,
     );
+    final paceLaps = laps.where((lap) => !lap.paceExcluded);
+    final paceTime = paceLaps.fold<double>(
+      0,
+      (total, lap) => total + lap.timeSeconds,
+    );
+    final paceDistance = paceLaps.fold<int>(
+      0,
+      (total, lap) => total + lap.distanceMeters,
+    );
     return StrokeSummary(
       stroke: entry.key,
       lapCount: laps.fold(0, (total, lap) => total + lap.lapCount),
       totalTimeSeconds: time,
       totalDistanceMeters: distance,
-      paceSecondsPer100m: distance == 0 ? 0 : time * 100 / distance,
+      paceSecondsPer100m: paceDistance == 0 ? 0 : paceTime * 100 / paceDistance,
       restCount: restCount,
       totalRestSeconds: restTime,
+      paceTimeSeconds: paceTime,
+      paceDistanceMeters: paceDistance,
+      excludedLapNumbers: laps
+          .where((lap) => lap.paceExcluded)
+          .map((lap) => lap.lapNumber)
+          .toList(),
     );
   }).toList();
 }
